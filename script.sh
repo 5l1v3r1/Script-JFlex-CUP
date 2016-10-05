@@ -1,4 +1,3 @@
-JAR=/media/foo-manroot/HDD_Varios/Programas/Java/bin/jar # Ubicación del binario jar
 FICHERO=ficheroPrueba.txt # Fichero de prueba
 
 # Texto de ayuda del uso del script
@@ -211,9 +210,6 @@ main ()
 		else
 			echo -e "Compilación correcta \n $salida"
 		fi
-
-		# Crea el ejecutable .jar
-	#	$JAR cvfe dist/$NOMBRE.jar yylex.$NOMBRE class/yylex/$NOMBRE.class
 
 		# Si existe el fichero de prueba, lo copia al directorio adecuado
 		if [ -f "$FICHERO" ]
