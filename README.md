@@ -11,7 +11,7 @@ Script para la compilación y ejecución de un archivo de especificación léxic
 Miguel García Martín - 2016
 
 Llamada correcta:
-./script.sh [-opciones | --opciones] [-n | --name] [fichero_lex] [-a | --args][argumentos]
+./script.sh [-opciones | --opciones] [-f | --file] [fichero_prueba] [-n | --name] [fichero_lex] [-a | --args][argumentos]
 
 Estando disponibles las siguientes opciones:
 	-a
@@ -36,7 +36,7 @@ Estando disponibles las siguientes opciones:
 </pre>
 
 Se puede probar el script con los ficheros proporcionados en la carpeta test ejecutando
-	./script.sh -d test/
+`./script.sh -d test/`
 
 La salida debería ser similar a la siguiente:
 <pre>
