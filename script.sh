@@ -1,5 +1,3 @@
-FICHERO=ficheroPrueba.txt # Fichero de prueba
-
 # Texto de ayuda del uso del script
 AYUDA="
 Script para la compilación y ejecución de un archivo de especificación léxica con JFlex.
@@ -18,6 +16,10 @@ Estando disponibles las siguientes opciones:
 	--dir
 		 Indica el directorio en el que se encuentra el archivo .lex (si no se
 		especifica nada, se toma por defecto el directorio actual).
+	-f
+	--file
+		 Especifica el fichero que se ha de copiar a la carpeta class/ para que el
+		analizador pueda trabajar con él. Por defecto es ficheroPrueba.txt.
 	-h
 	--help
 		  Muestra esta ayuda y termina la ejecución
@@ -27,8 +29,8 @@ Estando disponibles las siguientes opciones:
 "
 
 # Opciones en formato corto y largo para getopt
-OP_CORTAS=d:fhn:
-OP_LARGAS=args,help,dir:,name:
+OP_CORTAS=d:f:hn:
+OP_LARGAS=args,help,dir:,name:,file:
 
 # Función sin terminar para procesar las opciones a mano y malamente por si getopt falla
 args_a_mano ()
@@ -79,10 +81,11 @@ args_a_mano ()
 comprobar_args ()
 {
 	# Inicializa las variables necesarias con sus valores por defecto
-	DIR=$PWD 	# Directorio de compilación
-	CP=$DIR/class 	# Classpath
-	ARGS=""		# Argumentos para el archivo final
-	NOMBRE="Yylex" # Nombre del archivo
+	DIR=$PWD 			# Directorio de compilación
+	CP=$DIR/class 			# Classpath
+	ARGS=""				# Argumentos para el archivo final
+	NOMBRE="Yylex" 			# Nombre del archivo
+	FICHERO=ficheroPrueba.txt 	# Fichero de prueba
 
 	# Comprueba que se puede usar getopt para obtener las opciones
 	getopt --test > /dev/null
@@ -143,6 +146,19 @@ comprobar_args ()
 				fi
 
 				shift 2;;
+
+			"-f"|--file)
+				# Comprueba que exista el fichero
+                                if [ -f "$2" ]
+                                then
+                                        FICHERO="$2"
+                                else
+                                        echo -e "$0: Error - El fichero $2 no existe.\n"
+                                        exit -1;
+                                fi
+
+                                shift 2;;
+
 
 			--)
 				# Sale del bucle (ya ha acabado con los argumentos)
