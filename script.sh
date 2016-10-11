@@ -29,7 +29,7 @@ Estando disponibles las siguientes opciones:
 "
 
 # Opciones en formato corto y largo para getopt
-OP_CORTAS=d:f:hn:
+OP_CORTAS=ad:f:hn:
 OP_LARGAS=args,help,dir:,name:,file:
 
 # Función sin terminar para procesar las opciones a mano y malamente por si getopt falla
