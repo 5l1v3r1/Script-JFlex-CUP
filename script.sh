@@ -19,7 +19,7 @@ Estando disponibles las siguientes opciones:
 	-f
 	--file
 		 Especifica el fichero que se ha de copiar a la carpeta class/ para que el
-		analizador pueda trabajar con él. Por defecto es ficheroPrueba.txt.
+		analizador pueda trabajar con él.
 	-h
 	--help
 		  Muestra esta ayuda y termina la ejecución
@@ -38,54 +38,22 @@ args_a_mano ()
 
 	# Ya si eso algún día lo haré bien... (aunque se supone que la mayoría de los sistemas soportan getpot)
 	echo -e "
-		Error: No se pueden obtener los argumentos ('getopt --test' falló, seguramente porque el sistema no es compatible).
+		$0: Error - No se pueden obtener los argumentos ('getopt --test' falló, seguramente porque el sistema no es compatible).
 
 		El script se puede seguir usando, pero con los valores por defecto.
 		"
 	exit -1;
-	# Bucle para comprobar los argumentos
-#	for arg in $@
-#	do
-#		case "$arg" in
-#
-#			-d)
-#				# Comprueba la existencia del directorio siguiente
-#
-#			-h | --help)
-#				# Muestra la ayuda y sale
-#				echo -e "$AYUDA"
-#				exit;
-#
-#
-#		esac
-#	done
-#	exit 0;
-#
-#	if [ $# -gt 0 ]
-#	then
-#
-#		if [ -d $1 ]
-#		then
-#			# Elimina el carácter final /, si existe
-#			DIR="${1%/}"
-#			cd "$DIR"
-#			CP="$DIR"/class
-#		else
-#			echo -e "El directorio $1 no existe.\n"
-#			exit -1;
-#		fi
-#	fi
 }
 
 # Comprueba los argumentos y establece las variables de manera acorde
 comprobar_args ()
 {
 	# Inicializa las variables necesarias con sus valores por defecto
-	DIR=$PWD 			# Directorio de compilación
-	CP=$DIR/class 			# Classpath
+	DIR="$PWD" 			# Directorio de compilación
+	CP="$DIR"/class			# Classpath
 	ARGS=""				# Argumentos para el archivo final
 	NOMBRE="Yylex" 			# Nombre del archivo
-	FICHERO=ficheroPrueba.txt 	# Fichero de prueba
+	FICHERO=""			# Fichero de prueba
 
 	# Comprueba que se puede usar getopt para obtener las opciones
 	getopt --test > /dev/null
@@ -105,7 +73,8 @@ comprobar_args ()
 	eval set -- "$salida"
 
 	# Bucle para evaluar todos los argumentos disponibles
-	while true; do
+	while true
+	do
 		case "$1" in
 			-h|--help)
 				# Muestra la ayuda y sale
@@ -125,7 +94,6 @@ comprobar_args ()
 				then
 					# Elimina el carácter final, /, si existe
 					DIR="${2%/}"
-					cd "$DIR"
 					CP="$DIR"/class
 				else
 					echo -e "$0: Error - El directorio $2 no existe.\n"
@@ -151,7 +119,8 @@ comprobar_args ()
 				# Comprueba que exista el fichero
                                 if [ -f "$2" ]
                                 then
-                                        FICHERO="$2"
+					# Obtiene la ruta absoluta
+                                        FICHERO=`readlink -f "$2"`
                                 else
                                         echo -e "$0: Error - El fichero $2 no existe.\n"
                                         exit -1;
@@ -169,6 +138,9 @@ comprobar_args ()
 			exit -3;;
 		esac
 	done
+
+	# Cambia al directorio seleccionado, si es necesario
+	cd "$DIR"
 }
 
 # Ejecuta las funciones principales para la compilación y ejecución (si se quiere) del analizador
@@ -228,7 +200,7 @@ main ()
 		fi
 
 		# Si existe el fichero de prueba, lo copia al directorio adecuado
-		if [ -f "$FICHERO" ]
+		if [ "$FICHERO" != "" -a -f "$FICHERO" ]
 		then
 			cp -v "$FICHERO" class
 		fi
