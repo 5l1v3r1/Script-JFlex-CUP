@@ -220,15 +220,15 @@ crear_fuentes ()
 	                echo -e "Error al crear el archivo .java: \n $salida" >&2
         	        exit -1;
 	        fi
-	fi
 
-	# Comprueba que se hayan creado correctamente los archivos Parser.java y Sym.java
-	if [ ! -f "src/Parser.java" ] && [ ! -f "src/Sym.java" ]
-	then
-		echo -e "Error creando el archivo $NOMBRE con CUP" >&2
-		return -1;
-	else
-		echo -e "Archivos src/Parser.java y src/Sym.java creados correctamente."
+		# Comprueba que se hayan creado correctamente los archivos Parser.java y Sym.java
+		if [ ! -f "src/Parser.java" ] && [ ! -f "src/Sym.java" ]
+		then
+			echo -e "Error creando el archivo $NOMBRE con CUP" >&2
+			return -1;
+		else
+			echo -e "Archivos src/Parser.java y src/Sym.java creados correctamente."
+		fi
 	fi
 
 	return 0
