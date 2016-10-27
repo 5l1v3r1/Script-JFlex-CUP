@@ -106,14 +106,7 @@ comprobar_args ()
 				break;;
 
 			-c|--cup)
-				# Comprueba que exista el fichero
-				if [ -f "$2" ]
-                                then
-                                        NOMBRE_SEM="$2"
-                                else
-                                        echo -e "$0: Error - El fichero $2 no existe.\n" >&2
-                                        exit -1;
-                                fi
+				NOMBRE_SEM="$2"
 
 				shift 2;;
 
@@ -146,14 +139,7 @@ comprobar_args ()
 
 
 			"-j"|--jflex)
-				# Comprueba que exista el fichero
-				if [ -f "$2" ]
-				then
-					NOMBRE_LEX="$2"
-				else
-					echo -e "$0: Error - El fichero $2 no existe.\n" >&2
-					exit -1;
-				fi
+				NOMBRE_LEX="$2"
 
 				shift 2;;
 
