@@ -1,4 +1,4 @@
-# Script-JFlex
+# Script-JFlex-CUP
 Script para generar analizadores léxicos o semánticos a partir de unos ficheros de especificación con JFlex y CUP, además de ejecutarlos si se desea.
 
 # Requerimientos
