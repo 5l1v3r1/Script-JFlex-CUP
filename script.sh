@@ -23,7 +23,7 @@ Estando disponibles las siguientes opciones:
 	--dir
 		 Indica el directorio en el que se encuentra el archivo .lex (si no se especifica
 		nada, se toma por defecto el directorio actual).
-		
+
 	-h
 	--help
 		  Muestra esta ayuda y termina la ejecución
