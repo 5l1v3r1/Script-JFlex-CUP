@@ -4,7 +4,7 @@ Script para la compilación y ejecución de un analizador con JFlex y CUP.
 Miguel García Martín (Foo-Manroot) <miguel.garciamartin@hotmail.com> - 2016
 
 Llamada correcta:
-$0 [-opciones | --opciones] [-n | --name] [fichero_lex] [-a | --args][argumentos]
+$0 [-opciones | --opciones] [-a | --args][argumentos]
 
 Estando disponibles las siguientes opciones:
 	-a
@@ -23,12 +23,7 @@ Estando disponibles las siguientes opciones:
 	--dir
 		 Indica el directorio en el que se encuentra el archivo .lex (si no se especifica
 		nada, se toma por defecto el directorio actual).
-
-	-f
-	--file
-		 Especifica el fichero que se ha de copiar a la carpeta class/ para que el
-		analizador pueda trabajar con él.
-
+		
 	-h
 	--help
 		  Muestra esta ayuda y termina la ejecución
@@ -45,8 +40,8 @@ Estando disponibles las siguientes opciones:
 "
 
 # Opciones en formato corto y largo para getopt
-OP_CORTAS=ac:d:f:hj:p:
-OP_LARGAS=args,cup:,dir:,file:,help,jflex:,classpath:
+OP_CORTAS=ac:d:hj:p:
+OP_LARGAS=args,cup:,dir:,help,jflex:,classpath:
 
 # Función sin terminar para procesar las opciones a mano y malamente por si getopt falla
 args_a_mano ()
@@ -70,7 +65,6 @@ comprobar_args ()
 	ARGS=""				# Argumentos para el archivo final
 	NOMBRE_LEX="Yylex.lex"		# Nombre del archivo JFlex
 	NOMBRE_SEM=""			# Vacío, por defecto
-	FICHERO=""			# Fichero de prueba
 
 	# Comprueba que se puede usar getopt para obtener las opciones
 	getopt --test > /dev/null
@@ -123,20 +117,6 @@ comprobar_args ()
 				fi
 
 				shift 2;;
-
-			"-f"|--file)
-				# Comprueba que exista el fichero
-                                if [ -f "$2" ]
-                                then
-					# Obtiene la ruta absoluta
-                                        FICHERO=`readlink -f "$2"`
-                                else
-                                        echo -e "$0: Error - El fichero $2 no existe.\n" >&2
-                                        exit -1;
-                                fi
-
-                                shift 2;;
-
 
 			"-j"|--jflex)
 				NOMBRE_LEX="$2"
@@ -320,12 +300,6 @@ main ()
 		# Compila para crear los archivos .class
 		if compilar
 		then
-			# Si existe el fichero de prueba, lo copia al directorio adecuado
-#			if [ "$FICHERO" != "" -a -f "$FICHERO" ]
-#			then
-#				cp -v "$FICHERO" class
-#			fi
-
 			echo -e "\n--------------"
 			echo -e "\nTareas terminadas\n"
 
