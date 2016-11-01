@@ -1,5 +1,5 @@
 # Script-JFlex-CUP
-Script para generar analizadores léxicos o semánticos a partir de unos ficheros de especificación con JFlex y CUP, además de ejecutarlos si se desea.
+Script para generar analizadores léxicos o sintácticos a partir de unos ficheros de especificación con JFlex y CUP, además de ejecutarlos si se desea.
 
 # Requerimientos
 Para poder funcionar correctamente necesita tener instalados JFlex, CUP y el jdk (para usar javac y java).
@@ -23,13 +23,13 @@ Estando disponibles las siguientes opciones:
 
 	-c
 	--cup
-		 Especifica el fichero de especificación semántica para CUP. Si no se especifica
+		 Especifica el fichero de especificación sintáctica para CUP. Si no se especifica
 		ninguno, sólo se generará y compilará la parte correspondiente al análisis léxico
 		(con JFlex).
 
 	-d
 	--dir
-		 Indica el directorio en el que se encuentra el archivo .lex (si no se especifica
+		 Indica el directorio en el que se encuentran los archivos .lex y .cup (si no se especifica
 		nada, se toma por defecto el directorio actual).
 
 	-f
@@ -106,7 +106,7 @@ Línea 18 --> Error: El modificador "NO" sólo debe aparecer una vez.
 Línea 19 --> Error: El modificador "NO" sólo debe aparecer una vez.
 </pre>
 ## Analizador semántico
-Para realizar una prueba con un analizador semántico hace falta [el _.jar_ de CUP](http://www2.cs.tum.edu/projects/cup/). En este repositorio se incluye la versión 11a; pero se puede descargar otra versión si se desea (habrá que especificarlo con la opción '-p' o '--classpath').
+Para realizar una prueba con un analizador sintáctico hace falta [el _.jar_ de CUP](http://www2.cs.tum.edu/projects/cup/). En este repositorio se incluye la versión 11a; pero se puede descargar otra versión si se desea (habrá que especificarlo con la opción '-p' o '--classpath').
 Un ejemplo de ejecución es el siguiente:
 `./script.sh -j Calculadora.lex -c Calculadora.cup -d test/sem/`
 
