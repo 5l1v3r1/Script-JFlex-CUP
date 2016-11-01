@@ -15,13 +15,13 @@ Estando disponibles las siguientes opciones:
 
 	-c
 	--cup
-		 Especifica el fichero de especificación semántica para CUP. Si no se especifica
+		 Especifica el fichero de especificación sintáctica para CUP. Si no se especifica
 		ninguno, sólo se generará y compilará la parte correspondiente al análisis léxico
 		(con JFlex).
 
 	-d
 	--dir
-		 Indica el directorio en el que se encuentra el archivo .lex (si no se especifica
+		 Indica el directorio en el que se encuentran los archivos .lex y .cup (si no se especifica
 		nada, se toma por defecto el directorio actual).
 
 	-h
@@ -64,7 +64,7 @@ comprobar_args ()
 	CP="java-cup-11a.jar"		# Classpath
 	ARGS=""				# Argumentos para el archivo final
 	NOMBRE_LEX="Yylex.lex"		# Nombre del archivo JFlex
-	NOMBRE_SEM=""			# Vacío, por defecto
+	NOMBRE_SIN=""			# Vacío, por defecto
 
 	# Comprueba que se puede usar getopt para obtener las opciones
 	getopt --test > /dev/null
@@ -100,7 +100,7 @@ comprobar_args ()
 				break;;
 
 			-c|--cup)
-				NOMBRE_SEM="$2"
+				NOMBRE_SIN="$2"
 
 				shift 2;;
 
@@ -175,11 +175,11 @@ crear_fuentes ()
 	NOMBRE="${NOMBRE%.*}"
 
 	# Crea los archivos fuente con CUP (si se ha especificado)
-	if [ "$NOMBRE_SEM" ]
+	if [ "$NOMBRE_SIN" ]
 	then
 		echo -e "\n-Parte 2: CUP"
 		# Fuerza a que los archivos de salida se llamen Parser.java y Sym.java
-		salida=$(cup -destdir src/ -parser Parser -symbols Sym "$NOMBRE_SEM" 2>&1)
+		salida=$(cup -destdir src/ -parser Parser -symbols Sym "$NOMBRE_SIN" 2>&1)
 
 		if [[ "$salida" =~ .Error. ]]
         	then
@@ -246,8 +246,8 @@ ejecutar_lex ()
 	fi
 }
 
-# Ejecuta el analizador semántico (para el que se necesita el léxico)
-ejecutar_sem ()
+# Ejecuta el analizador sintáctico (para el que se necesita el léxico)
+ejecutar_sin ()
 {
 	RUTA=$(find . -name Parser.class)
 
@@ -311,9 +311,9 @@ main ()
 			       		"Sí" )
 						# Si se ha especificado un archivo .cup, busca Parser.class
 						# y lo ejecuta. Si no, busca el archivo generado con JFlex.
-						if [ "$NOMBRE_SEM" ]
+						if [ "$NOMBRE_SIN" ]
 						then
-							ejecutar_sem
+							ejecutar_sin
 						else
 							ejecutar_lex
 						fi
