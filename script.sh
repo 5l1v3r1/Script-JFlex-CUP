@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Texto de ayuda del uso del script
 AYUDA="
 Script para la compilación y ejecución de un analizador con JFlex y CUP.
