@@ -183,7 +183,7 @@ crear_fuentes ()
 		# Fuerza a que los archivos de salida se llamen Parser.java y Sym.java
 		salida=$(cup -destdir src/ -parser Parser -symbols Sym "$NOMBRE_SIN" 2>&1)
 
-		if [[ "$salida" =~ .Error. ]]
+		if [[ "$salida" =~ .*Error.* ]]
         	then
 	                echo -e "Error al crear el archivo .java: \n $salida" >&2
         	        exit -1;
