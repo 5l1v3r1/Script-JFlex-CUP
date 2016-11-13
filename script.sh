@@ -4,6 +4,7 @@
 AYUDA="
 Script para la compilación y ejecución de un analizador con JFlex y CUP.
 Miguel García Martín (Foo-Manroot) <miguel.garciamartin@hotmail.com> - 2016
+v. 1.0
 
 Llamada correcta:
 $0 [-opciones | --opciones] [-a | --args][argumentos]
@@ -298,6 +299,15 @@ main ()
 	then
 		echo -e "\n--------------"
 		echo "Archivos fuente creados"
+
+		# Copia todos los archivos .java auxiliares que pueda haber en
+		# la carpeta actual en la carpeta src/
+		aux=$(ls -1 *.java 2>/dev/null | wc -l)
+		if [ $aux != 0 ]
+		then
+			echo "Copiando los archivos .java auxiliares..."
+			cp -v *.java src/
+		fi
 
 		# Compila para crear los archivos .class
 		if compilar
