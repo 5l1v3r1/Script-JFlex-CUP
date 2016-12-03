@@ -302,11 +302,11 @@ main ()
 
 		# Copia todos los archivos .java auxiliares que pueda haber en
 		# la carpeta actual en la carpeta src/
-		aux=$(ls -1 *.java 2>/dev/null | wc -l)
+		aux=$(find . -name "*.java" -not -path "*src*" 2>/dev/null | wc -l)
 		if [ $aux != 0 ]
 		then
 			echo "Copiando los archivos .java auxiliares..."
-			cp -v *.java src/
+			cp -v $(find . -name '*.java' -not -path '*src*') src/
 		fi
 
 		# Compila para crear los archivos .class
