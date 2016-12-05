@@ -211,7 +211,7 @@ compilar ()
 
 	# Crea el archivo .class (redirecciona stderr a stdout
 	# y almacena la salida en una variable)
-	salida=$(javac -cp "$CP" -d class src/*.java -Xdiags:verbose -Xlint:unchecked 2>&1)
+	salida=$(javac -cp "$CP" -d class $(find src/ -name '*.java') -Xdiags:verbose -Xlint:unchecked 2>&1)
 
 	# Comprueba si hay errores
 	if [[ "$salida" =~ .error. ]]
@@ -306,7 +306,7 @@ main ()
 		if [ $aux != 0 ]
 		then
 			echo "Copiando los archivos .java auxiliares..."
-			cp -v $(find . -name '*.java' -not -path '*src*') src/
+			cp --parents -v $(find . -name '*.java' -not -path '*src*') src/
 		fi
 
 		# Compila para crear los archivos .class
