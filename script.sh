@@ -4,7 +4,7 @@
 AYUDA="
 Script para la compilación y ejecución de un analizador con JFlex y CUP.
 Miguel García Martín (Foo-Manroot) <miguel.garciamartin@hotmail.com> - 2016
-v. 1.0
+v. 1.1
 
 Llamada correcta:
 $0 [-opciones | --opciones] [-a | --args][argumentos]
@@ -14,7 +14,8 @@ Estando disponibles las siguientes opciones:
 	--args
 		 Establece las opciones que se pasarán al ejecutar el archivo resultante de
 		la compilación, si es que se necesitan. Todo lo que venga después de -a (o
-		--args) se tomará como argumentos y se pasarán directamente.
+		--args) se tomará como argumentos y se pasarán directamente. Si son varios
+		elementos, deben separarse con dos puntos, ':'
 
 	-c
 	--cup
@@ -98,8 +99,9 @@ comprobar_args ()
 			-a|--args)
 				#  Avanza en los argumentos, se queda con el resto como
 				# los argumentos para el archivo final y sale del bucle
-				shift 2
-				ARGS="$@"
+				shift 2;
+				IFS=':' read -r -a ARGS <<< "$@"
+				
 				break;;
 
 			-c|--cup)
@@ -243,7 +245,7 @@ ejecutar_lex ()
 		echo -e "Ejecutando $RUTA"
                 echo -e "--------------\n"
 
-		java -cp "$CP":class "$RUTA" "$ARGS"
+		java -cp "$CP":class "$RUTA" "${ARGS[@]}"
 	else
 		echo "$0: Error al intentar ejecutar $NOMBRE.class (no se ha encontrado)" >&2
 	fi
@@ -267,7 +269,7 @@ ejecutar_sin ()
 		echo -e "Ejecutando $RUTA"
                 echo -e "--------------\n"
 
-		java -cp "$CP":class "$RUTA" "$ARGS"
+		java -cp "$CP":class "$RUTA" "${ARGS[@]}"
 	else
 		echo "$0: Error al intentar ejecutar Parser.class (no se ha encontrado)" >&2
 	fi
