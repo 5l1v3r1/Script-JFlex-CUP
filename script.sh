@@ -1,5 +1,25 @@
 #!/bin/bash
 
+COMPIL=javac	# Compilador
+INTERP=java	# Intérprete
+
+OUTDIR="class"	# Directorio en el que se crean los archivos
+SRCDIR="src"	# Directorio en el que copiar los archivos .java generados
+
+
+
+# Inicializa las variables necesarias con sus valores por defecto
+DIR="$PWD" 			# Directorio de compilación
+CP="java-cup-11a.jar:$OUTDIR"	# Classpath
+ARGS=""				# Argumentos para el archivo final
+NOMBRE_LEX="Yylex.lex"		# Nombre del archivo JFlex
+NOMBRE_CUP=""			# Vacío, por defecto
+
+MAIN="Parser"	# Nombre del analizador síntáctico (la clase principal de CUP)
+SYM="Sym"	# Nombre de la clase con los símbolos (para CUP)
+
+
+
 # Texto de ayuda del uso del script
 AYUDA="
 Script para la compilación y ejecución de un analizador con JFlex y CUP.
@@ -12,21 +32,21 @@ $0 [-opciones | --opciones] [-a | --args][argumentos]
 Estando disponibles las siguientes opciones:
 	-a
 	--args
-		 Establece las opciones que se pasarán al ejecutar el archivo resultante de
-		la compilación, si es que se necesitan. Todo lo que venga después de -a (o
-		--args) se tomará como argumentos y se pasarán directamente. Si son varios
-		elementos, deben separarse con dos puntos, ':'
+		 Establece las opciones que se pasarán al ejecutar el archivo resultante
+		de la compilación, si es que se necesitan. Todo lo que venga después
+		de -a (o --args) se tomará como argumentos y se pasarán directamente.
+		Si son varios elementos, deben separarse con dos puntos, ':'
 
 	-c
 	--cup
-		 Especifica el fichero de especificación sintáctica para CUP. Si no se especifica
-		ninguno, sólo se generará y compilará la parte correspondiente al análisis léxico
-		(con JFlex).
+		 Especifica el fichero de especificación sintáctica para CUP. Si no se
+		especifica ninguno, sólo se generará y compilará la parte correspondiente
+		al análisis léxico (con JFlex).
 
 	-d
 	--dir
-		 Indica el directorio en el que se encuentran los archivos .lex y .cup (si no se especifica
-		nada, se toma por defecto el directorio actual).
+		 Indica el directorio en el que se encuentran los archivos .lex y .cup
+		(si no se especifica nada, se toma por defecto el directorio actual).
 
 	-h
 	--help
@@ -34,28 +54,47 @@ Estando disponibles las siguientes opciones:
 
 	-j
 	--jflex
-		 Especifica el nombre del archivo jlex a compilar (YYlex.lex, por defecto).
+		 Especifica el nombre del archivo jlex a compilar
+		($NOMBRE_LEX, por defecto).
+
+	-l
+	--limpiar
+	--clean
+		 Elimina todos los archivos generados por este script (las carpetas
+		$OUTDIR y $SRCDIR).
+
+	-m
+	--main
+		 Especifica el nombre de la clase principal del analizador sintáctico.
+		($MAIN, por defecto).
 
 	-p
 	--classpath
-		 Establece el classpath para que java pueda ejecutarla (necesario para CUP).
-		Por defecto es \"java-cup-11a.jar\". Si se quieren poner varias rutas, deben
-		separarse con dos puntos -> \"path1:path2:path3\".
+		 Establece el classpath para que java pueda ejecutar los archivos de
+		salida. Por defecto es \"$CP\" (necesario para CUP). Si se quieren poner
+		varias rutas, deben separarse con dos puntos -> \"path1:path2:path3\".
+
+	-s
+	--sym
+		 Establece el nombre del archivo con la tabla de símbolos para CUP
+		($SYM, por defecto).
 "
 
 # Opciones en formato corto y largo para getopt
-OP_CORTAS=ac:d:hj:p:
-OP_LARGAS=args,cup:,dir:,help,jflex:,classpath:
+OP_CORTAS=ac:d:hj:lm:s:p:
+OP_LARGAS=args,cup:,dir:,help,jflex:,limpiar,clean,main:,sym:,classpath:
 
 # Función sin terminar para procesar las opciones a mano y malamente por si getopt falla
 args_a_mano ()
 {
-
-	# Ya si eso algún día lo haré bien... (aunque se supone que la mayoría de los sistemas soportan getpot)
+	# Ya si eso algún día lo haré bien... (aunque se supone que la mayoría de los
+	# sistemas soportan getpot)
 	echo -e "
-		$0: Error - No se pueden obtener los argumentos ('getopt --test' falló, seguramente porque el sistema no es compatible).
+		$0: Error - No se pueden obtener los argumentos ('getopt --test' falló,"\
+		" seguramente porque el sistema no es compatible).
 
 		El script se puede seguir usando, pero con los valores por defecto.
+		También se pueden cambiar estos valores directamente en el script.
 		"
 	exit -1;
 }
@@ -63,12 +102,6 @@ args_a_mano ()
 # Comprueba los argumentos y establece las variables de manera acorde
 comprobar_args ()
 {
-	# Inicializa las variables necesarias con sus valores por defecto
-	DIR="$PWD" 			# Directorio de compilación
-	CP="java-cup-11a.jar"		# Classpath
-	ARGS=""				# Argumentos para el archivo final
-	NOMBRE_LEX="Yylex.lex"		# Nombre del archivo JFlex
-	NOMBRE_SIN=""			# Vacío, por defecto
 
 	# Comprueba que se puede usar getopt para obtener las opciones
 	getopt --test > /dev/null
@@ -78,7 +111,8 @@ comprobar_args ()
 	fi
 
 	# Guarda el resultado para manejar correctamente los errores
-	salida=`getopt --options $OP_CORTAS --longoptions $OP_LARGAS --name "$0" -- "$@"`
+	salida=$(getopt --options $OP_CORTAS --longoptions $OP_LARGAS \
+		 --name "$0" -- "$@")
 
 	if [[ $? != 0 ]]; then
 
@@ -101,11 +135,10 @@ comprobar_args ()
 				# los argumentos para el archivo final y sale del bucle
 				shift 2;
 				IFS=':' read -r -a ARGS <<< "$@"
-				
 				break;;
 
 			-c|--cup)
-				NOMBRE_SIN="$2"
+				NOMBRE_CUP="$2"
 
 				shift 2;;
 
@@ -117,7 +150,8 @@ comprobar_args ()
 					# Elimina el carácter final, /, si existe
 					DIR="${2%/}"
 				else
-					echo -e "$0: Error - El directorio $2 no existe.\n" >&2
+					echo -e "$0: Error - El directorio '$2' no " \
+						"existe." >&2
 					exit -1;
 				fi
 
@@ -125,6 +159,28 @@ comprobar_args ()
 
 			"-j"|--jflex)
 				NOMBRE_LEX="$2"
+
+				shift 2;;
+
+			-l|--clean|--limpiar)
+				echo -e "-> Eliminando carpeta '$OUTDIR'"
+				rm -rf "$OUTDIR"
+				echo -e "-> Hecho <- "
+				echo -e "-> Eliminando carpeta '$SRCDIR'"
+				rm -rf "$SRCDIR"
+				echo -e "-> Hecho <- "
+
+				echo "Tareas terminadas."
+
+				exit 1;;
+
+			-m|--main)
+				MAIN="$2"
+
+				shift 2;;
+
+			-s|--sym)
+				SYM="$2"
 
 				shift 2;;
 
@@ -138,7 +194,8 @@ comprobar_args ()
 				shift
 				break;;
 		*)
-			echo "$0: Error no identificado - $1" >&2
+			echo "$0: Error no identificado al interpretar los argumentos"\
+				" - $1" >&2
 			exit -3;;
 		esac
 	done
@@ -152,7 +209,7 @@ crear_fuentes ()
 {
 	echo "Creando archivos .java"
 	echo -e "\n-Parte 1: JFlex"
-	salida=$(jflex -v "$NOMBRE_LEX" -d src/)
+	salida=$(jflex -v "$NOMBRE_LEX" -d "$SRCDIR")
 	ret_val=0
 
 	if [[ "$salida" =~ .error. ]]
@@ -162,16 +219,16 @@ crear_fuentes ()
 	fi
 
 	# La salida de jflex proporciona información sobre el nombre del archivo .java
-	# La última línea debería ser Writing code to "XXX.java" (con las comillas)
+	# La última línea debería ser Writing code to "X.java" (con las comillas)
 	NOMBRE=$(echo -e "$salida" | grep -P "Writing code to .*" | awk -F \" '{print$2}')
 
 	# Comprueba que se haya creado correctamente
 	if [ ! -f "$NOMBRE" ]
 	then
-		echo -e "Error creando el archivo $NOMBRE con JFlex" >&2
+		echo -e "Error creando el archivo '$NOMBRE' con JFlex" >&2
 		return -1;
 	else
-		echo -e "Archivo $NOMBRE creado correctamente."
+		echo -e "Archivo '$NOMBRE' creado correctamente."
 	fi
 
 	# Se queda con el nombre sin la extensión ni la ruta (se usa luego para
@@ -180,11 +237,12 @@ crear_fuentes ()
 	NOMBRE="${NOMBRE%.*}"
 
 	# Crea los archivos fuente con CUP (si se ha especificado)
-	if [ "$NOMBRE_SIN" ]
+	if [ "$NOMBRE_CUP" ]
 	then
 		echo -e "\n-Parte 2: CUP"
 		# Fuerza a que los archivos de salida se llamen Parser.java y Sym.java
-		salida=$(cup -destdir src/ -parser Parser -symbols Sym "$NOMBRE_SIN" 2>&1)
+		salida=$(cup -destdir "$SRCDIR" -parser "$MAIN" -symbols "$SYM" \
+			 "$NOMBRE_CUP" 2>&1)
 
 		if [[ "$salida" =~ .*Error.* ]]
         	then
@@ -192,13 +250,15 @@ crear_fuentes ()
         	        exit -1;
 	        fi
 
-		# Comprueba que se hayan creado correctamente los archivos Parser.java y Sym.java
-		if [ ! -f "src/Parser.java" ] && [ ! -f "src/Sym.java" ]
+		# Comprueba que se hayan creado correctamente los archivos
+		# Parser.java y Sym.java
+		if [ ! -f "$SRCDIR/$MAIN.java" ] && [ ! -f "$SRCDIR/$SYM.java" ]
 		then
-			echo -e "Error creando el archivo $NOMBRE con CUP" >&2
+			echo -e "Error creando el archivo '$NOMBRE' con CUP" >&2
 			return -1;
 		else
-			echo -e "Archivos src/Parser.java y src/Sym.java creados correctamente."
+			echo -e "Archivos $SRCDIR/$MAIN.java y $SRCDIR/$SYM.java"\
+				" creados correctamente."
 		fi
 	fi
 
@@ -213,7 +273,8 @@ compilar ()
 
 	# Crea el archivo .class (redirecciona stderr a stdout
 	# y almacena la salida en una variable)
-	salida=$(javac -cp "$CP" -d class $(find src/ -name '*.java') -Xdiags:verbose -Xlint:unchecked 2>&1)
+	salida=$("$COMPIL" -cp "$CP" -d "$OUTDIR" $(find "$SRCDIR" -name '*.java') \
+		-Xdiags:verbose -Xlint:unchecked 2>&1)
 
 	# Comprueba si hay errores
 	if [[ "$salida" =~ .error. ]]
@@ -245,16 +306,17 @@ ejecutar_lex ()
 		echo -e "Ejecutando $RUTA"
                 echo -e "--------------\n"
 
-		java -cp "$CP":class "$RUTA" "${ARGS[@]}"
+		"$INTERP" -cp "$CP" "$RUTA" "${ARGS[@]}"
 	else
-		echo "$0: Error al intentar ejecutar $NOMBRE.class (no se ha encontrado)" >&2
+		echo "$0: Error al intentar ejecutar $NOMBRE.class (no se ha"\
+			" encontrado)" >&2
 	fi
 }
 
 # Ejecuta el analizador sintáctico (para el que se necesita el léxico)
 ejecutar_sin ()
 {
-	RUTA=$(find . -name Parser.class)
+	RUTA=$(find . -name "$MAIN.class")
 
 	# Cambia las barras por puntos para obtener la ruta y elimina el principio
 	# (./class/) y la extensión (.class) para obtener el nombre de la clase
@@ -269,7 +331,7 @@ ejecutar_sin ()
 		echo -e "Ejecutando $RUTA"
                 echo -e "--------------\n"
 
-		java -cp "$CP":class "$RUTA" "${ARGS[@]}"
+		"$INTERP" -cp "$CP" "$RUTA" ${ARGS[@]}
 	else
 		echo "$0: Error al intentar ejecutar Parser.class (no se ha encontrado)" >&2
 	fi
@@ -286,14 +348,14 @@ main ()
 	#	|
 	#	|-------class/
 	#		|____ ... (archivos .class)
-	if [ ! -d src ]
+	if [ ! -d "$SRCDIR" ]
 	then
-		mkdir --parents src -v
+		mkdir --parents "$SRCDIR" -v
 	fi
 
-	if [ ! -d class ]
+	if [ ! -d "$OUTDIR" ]
 	then
-		mkdir --parents class -v
+		mkdir --parents "$OUTDIR" -v
 	fi
 
 	# Crea los archivos fuente (.java)
@@ -304,11 +366,12 @@ main ()
 
 		# Copia todos los archivos .java auxiliares que pueda haber en
 		# la carpeta actual en la carpeta src/
-		aux=$(find . -name "*.java" -not -path "*src*" 2>/dev/null | wc -l)
+		aux=$(find . -name "*.java" -not -path "*$SRCDIR*" 2>/dev/null | wc -l)
 		if [ $aux != 0 ]
 		then
 			echo "Copiando los archivos .java auxiliares..."
-			cp --parents -v $(find . -name '*.java' -not -path '*src*') src/
+			cp --parents -v $(find . -name '*.java'\
+				-not -path '*'"$SRCDIR"'*') "$SRCDIR"
 		fi
 
 		# Compila para crear los archivos .class
@@ -318,14 +381,17 @@ main ()
 			echo -e "\nTareas terminadas\n"
 
 			# Si se ha creado correctamente, intenta ejecutar el archivo
-			echo "¿Ejecutar el programa? (introducir el número de la respuesta elegida)"
+			echo "¿Ejecutar el programa? (introducir el número de la"\
+			     " respuesta elegida)"
 			select respuesta in "Sí" "No"
 			do
 				case $respuesta in
 			       		"Sí" )
-						# Si se ha especificado un archivo .cup, busca Parser.class
-						# y lo ejecuta. Si no, busca el archivo generado con JFlex.
-						if [ "$NOMBRE_SIN" ]
+						# Si se ha especificado un archivo .cup,
+						# busca Parser.class y lo ejecuta.
+						# Si no, busca el archivo generado con
+						# JFlex.
+						if [ "$NOMBRE_CUP" ]
 						then
 							ejecutar_sin
 						else
@@ -335,7 +401,9 @@ main ()
 						break;;
 
 				        "No" )
-						echo -e "Para ejecutar el archivo, usar la orden 'java [-cp class] paquete.clase'"
+						echo -e "Para ejecutar el archivo, usar"\
+							" la orden 'java [-cp $CP]"\
+							" $MAIN [-a $ARGS]'"
 						exit;;
 				esac
 			done

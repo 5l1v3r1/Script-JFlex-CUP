@@ -52,8 +52,6 @@ import java.io.IOException;
 
 [0-9]+       {return new Symbol(Sym.ENTERO, yyline, yycolumn,new Integer (yytext())); } 
 
-[^0-9\r\n\t \+\-\*"^"/]+ {System.err.println("Error lexico: linea "+yyline +" ; valor del token : "+ yytext() ); }
-
- .           {System.err.println("Error lexico");} 
+ .           {System.err.println("Error lexico: linea "+yyline +" ; valor del token : "+ yytext() ); } 
 
 
