@@ -9,33 +9,30 @@ Si se quiere ejecutar el analizador semántico también hace falta descargarse [
 Para ver la ayuda se puede usar la opción -h o --help. La salida debería ser similar a la siguiente:
 <pre>
 Script para la compilación y ejecución de un analizador con JFlex y CUP.
-Miguel García Martín (Foo-Manroot) miguel.garciamartin@hotmail.com - 2016
+Miguel García Martín (Foo-Manroot) <miguel.garciamartin@hotmail.com> - 2016
+v. 1.1
 
 Llamada correcta:
-./script.sh [-opciones | --opciones] [-n | --name] [fichero_lex] [-a | --args][argumentos]
+./script.sh [-opciones | --opciones] [-a | --args][argumentos]
 
 Estando disponibles las siguientes opciones:
 	-a
 	--args
-		 Establece las opciones que se pasarán al ejecutar el archivo resultante de
-		la compilación, si es que se necesitan. Todo lo que venga después de -a (o
-		--args) se tomará como argumentos y se pasarán directamente.
+		 Establece las opciones que se pasarán al ejecutar el archivo resultante
+		de la compilación, si es que se necesitan. Todo lo que venga después
+		de -a (o --args) se tomará como argumentos y se pasarán directamente.
+		Si son varios elementos, deben separarse con dos puntos, ':'
 
 	-c
 	--cup
-		 Especifica el fichero de especificación sintáctica para CUP. Si no se especifica
-		ninguno, sólo se generará y compilará la parte correspondiente al análisis léxico
-		(con JFlex).
+		 Especifica el fichero de especificación sintáctica para CUP. Si no se
+		especifica ninguno, sólo se generará y compilará la parte correspondiente
+		al análisis léxico (con JFlex).
 
 	-d
 	--dir
-		 Indica el directorio en el que se encuentran los archivos .lex y .cup (si no se especifica
-		nada, se toma por defecto el directorio actual).
-
-	-f
-	--file
-		 Especifica el fichero que se ha de copiar a la carpeta class/ para que el
-		analizador pueda trabajar con él.
+		 Indica el directorio en el que se encuentran los archivos .lex y .cup
+		(si no se especifica nada, se toma por defecto el directorio actual).
 
 	-h
 	--help
@@ -43,13 +40,31 @@ Estando disponibles las siguientes opciones:
 
 	-j
 	--jflex
-		 Especifica el nombre del archivo jlex a compilar (YYlex.lex, por defecto).
+		 Especifica el nombre del archivo jlex a compilar
+		(Yylex.lex, por defecto).
+
+	-l
+	--limpiar
+	--clean
+		 Elimina todos los archivos generados por este script (las carpetas
+		class y src).
+
+	-m
+	--main
+		 Especifica el nombre de la clase principal del analizador sintáctico.
+		(Parser, por defecto).
 
 	-p
 	--classpath
-		 Establece el classpath para que java pueda ejecutarla (necesario para CUP).
-		Por defecto es "java-cup-11a.jar". Si se quieren poner varias rutas, deben
-		separarse con dos puntos -> "path1:path2:path3".
+		 Establece el classpath para que java pueda ejecutar los archivos de
+		salida. Por defecto es "java-cup-11a.jar:class" (necesario para CUP). Si se quieren poner
+		varias rutas, deben separarse con dos puntos -> "path1:path2:path3".
+
+	-s
+	--sym
+		 Establece el nombre del archivo con la tabla de símbolos para CUP
+		(Sym, por defecto).
+
 </pre>
 
 # Ejecución y pruebas
@@ -108,7 +123,7 @@ Línea 19 --> Error: El modificador "NO" sólo debe aparecer una vez.
 ## Analizador semántico
 Para realizar una prueba con un analizador sintáctico hace falta [el _.jar_ de CUP](http://www2.cs.tum.edu/projects/cup/). En este repositorio se incluye la versión 11a; pero se puede descargar otra versión si se desea (habrá que especificarlo con la opción '-p' o '--classpath').
 Un ejemplo de ejecución es el siguiente:
-`./script.sh -j Calculadora.lex -c Calculadora.cup -d test/sem/`
+`./script.sh -j Calculadora.lex -c Calculadora.cup -d test/sint/`
 
 Esto permitirá realizar un análisis de una calculadora y generar una salida si la entrada es correcta. La entrada se producirá desde la entrada estándar y terminará cuando se detecte fin de entrada (^D o ^C).
 

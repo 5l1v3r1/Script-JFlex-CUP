@@ -24,7 +24,7 @@ SYM="Sym"	# Nombre de la clase con los símbolos (para CUP)
 AYUDA="
 Script para la compilación y ejecución de un analizador con JFlex y CUP.
 Miguel García Martín (Foo-Manroot) <miguel.garciamartin@hotmail.com> - 2016
-v. 1.1
+v. 1.2
 
 Llamada correcta:
 $0 [-opciones | --opciones] [-a | --args][argumentos]
@@ -164,10 +164,10 @@ comprobar_args ()
 
 			-l|--clean|--limpiar)
 				echo -e "-> Eliminando carpeta '$OUTDIR'"
-				rm -rf "$OUTDIR"
+				rm -rfv "$DIR/$OUTDIR"
 				echo -e "-> Hecho <- "
 				echo -e "-> Eliminando carpeta '$SRCDIR'"
-				rm -rf "$SRCDIR"
+				rm -rfv "$DIR/$SRCDIR"
 				echo -e "-> Hecho <- "
 
 				echo "Tareas terminadas."
