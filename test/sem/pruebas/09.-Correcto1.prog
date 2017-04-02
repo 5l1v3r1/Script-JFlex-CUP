@@ -1,0 +1,11 @@
+/**
+ * Programa correcto para comprobar.
+ * Sólo tiene una sentencia y ninguna variable declarada.
+ *
+ * Este programa escribiría '1' por pantalla y saldría.
+ */
+program correcto is
+begin
+	write 1
+end
+

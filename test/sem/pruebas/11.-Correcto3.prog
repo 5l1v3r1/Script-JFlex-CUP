@@ -1,0 +1,31 @@
+/**
+ * Programa correcto para probar el analizador.
+ *
+ * La tarea realizada sería una versión iterativa
+ * de encontrar el factorial de un número, 'n'.
+ */
+program p is
+
+	var res : integer;
+	var n : integer;
+begin
+
+	read n;
+	res := n;
+
+	/* Comprueba que sea un número positivo */
+	if n <= 1
+	then
+		n := 1;
+		res := 1
+	end if;
+
+	/* Bucle principal para calcular el producto */
+	while n > 1
+	do
+		n := n - 1;
+		res := res * n
+	end while;
+
+	write res
+end

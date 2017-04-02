@@ -1,0 +1,39 @@
+/**
+ * Prueba de las especificaciones semánticas 1 a 3
+ */
+program pruebaSem is
+
+	var entero : integer;	
+	var entero : integer;	/* <-- Error sintáctico. Variable ya declarada */
+
+	var error : boolean;
+	var error, entero: integer; /* <-- Error sintáctico. Variable ya declarada (x2) */
+
+begin
+
+	entero := 3;
+	error := true;
+
+	sinDeclarar := entero;	/* <-- Error semántico -> variable no declarada (EspSemt1) */
+				/*   \_ Error semántico -> la variable asignada (tipo nulo)
+							y el valor a asignar (tipo entero)
+							deben ser del mismo tipo */
+
+	/* Comprobación EspSemt2 (se detecta error sintáctico porque la condición
+	está mal formada) */
+	if (entero + 2)
+	then
+		entero := true and error /* <-- Error semántico -> los tipos no concuerdan (EspSemt2) */
+	else
+		error := 2 /* <-- Error semántico -> los tipos no concuerdan (EspSemt2) */
+	end if;
+
+	/* Comprobación EspSemt3 (se detecta error sintáctico porque la condición
+	está mal formada) */
+	while 1
+	do
+		entero := true /* <-- Error semántico -> los tipos no concuerdan (EspSemt3) */
+	end while;
+
+	skip
+end

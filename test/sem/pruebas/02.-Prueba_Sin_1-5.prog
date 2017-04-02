@@ -1,0 +1,35 @@
+/**
+ * Comprueba las especificaciones sintácticas 1 a 5
+ */
+program programa is
+	var programa : integer;		/* <-- Error sintáctico -> El nombre del programa no se puede usar como variable (EspSint1) */
+	var varEntera : integer;
+
+	var varEntera : boolean;	/* <-- Error sintáctico -> La variable 'varEntera' ya está declarada (EspSint2) */
+	var booleano, varEntera : boolean;	/* <-- Error sintáctico -> La variable 'varEntera' ya está declarada (EspSint2) */
+
+	var var1, var2, var3, var4 , var5: boolean;
+	
+begin
+	varEntera := 3;
+
+	var1 := true;
+	booleano := false;
+
+	var2 := var1 and booleano;	/* <-- var2 := false */
+					/*   \_ EspSint3  */
+
+	var3 := var1 or false;	/* <-- var3 := true */
+				/*   \_ EspSint3  */
+	
+	var4 := not var1;	/* <-- Error sintáctico (la expresión negada debe estar entre paréntesis) */
+				/*   \_ EspSint4 */
+
+	var4 := not (var1);	/* <-- var4 := false */
+				/*   \_ EspSint4  */
+
+	var5 := (varEntera = 0); /* <-- var5 := false */
+				 /*   \_ EspSint5  */
+
+	write varEntera
+end

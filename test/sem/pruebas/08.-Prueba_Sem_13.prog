@@ -1,0 +1,51 @@
+/**
+ * Prueba de la especificación semántica 13
+ */
+program test is
+
+	var entero,aux, cero, aux2 : integer;
+	var bool : boolean;
+	var variable, sinInic : boolean;
+
+begin
+	cero := 0;
+	entero := 23;
+	bool := false;
+
+	/* Comprobación dinámica de errores (EspSemt13) */
+	aux := entero / cero;	/* <-- División entre 0 */
+	aux := entero / (4 + 3 * -1 -1);	/* <-- División entre 0 */
+
+	variable := sinInic;	/* <-- Variable sin inicializar ('sinInic') */
+
+	while true /* <-- Bucle infinito */
+	do
+		aux := aux + 1;
+		write aux
+	end while;
+
+
+	if  not (bool or true) /* <-- Siempre se entra en la rama del 'else' */
+	then
+		entero := entero + 1
+	else
+		aux := -12 + entero * 24
+	end if;
+
+	if true /* <-- Siempre va a ejecutar la rama del 'if' */
+	then
+		aux := -100
+	end if;
+
+	/* Como en las dos ramas se inicializa aux2 a 12, en la tabla de
+	símbolos global esta variable aparece como inicializada a 12
+	(pero sin usar) */
+	if bool or variable
+	then
+		aux2 := 12
+	else
+		aux2 := 12
+	end if;
+
+	skip
+end

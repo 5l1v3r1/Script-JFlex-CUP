@@ -1,0 +1,35 @@
+/**
+ * Prueba de los requisitos léxicos
+ */
+ç program léxico is		/* <-- Error léxico -> 'ç' */
+
+	var _bool : boolean;	/* <-- Error léxico -> '_' */
+	var böol : boolean;	/* <-- Error léxico -> 'ö' */
+	var entero, variable: integer;
+begin
+	read variable;
+
+	entero := (variable > 3)? variable : 3;	/* <-- Error léxico -> '?' */
+						/*   \_ Error sintáctico -> operación mal formada */
+
+	if (ENTERO > 3) /* <-- No hay error léxico porque no es sensible a mayúsculas/minúsculas */
+	then {
+		/* Errores léxicos en los símbolos '{' y '}' */
+
+		variable := entero ^ 2;	/* <-- Error léxico -> '^' */
+					/*   \_ Error sintáctico -> expresión de asignación mal formada */
+	}
+	end if;
+
+	[!"·#@%  /* <-- Errores léxicos en los símbolos '[', "!", '"', '·', '#', '@' y '%' */
+	
+	// Este comentario no lo detectará como error
+
+	/**
+	 * Este comentario tampoco provocará un error.
+	 */
+
+	/* Sin errores */
+
+	write entero
+end

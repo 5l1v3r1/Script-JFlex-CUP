@@ -1,0 +1,1366 @@
+package pecl1;
+
+import java_cup.runtime.*;
+
+import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
+
+import tabla.*;
+import árbol.*;
+import common.Logger;
+
+import árbol.nodos.*;
+import árbol.nodos.declaraciones.*;
+import árbol.nodos.sentencias.*;
+
+parser code
+{:
+	/**
+	 * Tabla para hacer un seguimiento de los identificadores.
+	 */
+	public final TablaSímbolos tabla_sim = new TablaSímbolos ();
+
+	/**
+	 * Árbol sintáctico
+	 */
+	protected Árbol árbol = null;
+
+	/**
+	 *  Símbolo auxiliar para que los no terminales puedan
+	 * propagar el símbolo permitiendo usar RESULT para otras cosas.
+	 */
+	protected Symbol aux;
+
+	/**
+	 * Analizador léxico que servirá los símbolos.
+	 */
+	private static Scanner scanner;
+
+	/**
+	 * Main de la clase
+	 */
+	public static void main (String argv[]) throws Exception
+	{
+		Parser analizador;
+
+		/* Obtiene la entrada a través de un fichero (que debe llamarse *.prog) */
+		if (argv.length <= 0) {
+
+			System.out.println ("Llamada incorrecta. \nUso: java Scanner <fichero_entrada_1> <fichero_entrada_2> ... (-v | --verbose)");
+			return;
+		} else {
+			/* Busca las opciones */
+			for (String s : argv) {
+
+				if (s.equals ("-v") || s.equals ("--verbose")) {
+
+					Logger.cambiarNivelDetalle (1);
+				}
+			}
+
+			/* Busca los ficheros a analizar */
+			for (int i = 0; i < argv.length; i++) {
+
+				scanner = null;
+				File fichero = null;
+
+				Logger.reiniciarErrores ();
+
+				if (argv [i].equals ("-v") || argv [i].equals ("--verbose")) {
+
+					continue;
+				}
+
+				try {
+					if (!argv [i].endsWith (".prog")) {
+
+						System.err.println ("\n----------------------------------------------------------------------");
+						System.err.println ("Error sintáctico: el fichero " + argv [i] + " no tiene extensión .prog");
+						System.err.println ("----------------------------------------------------------------------");
+						continue;
+					}
+
+					fichero = new File (argv [i]);
+
+					scanner = new Scanner (new FileReader (fichero));
+
+				} catch (java.io.FileNotFoundException ex) {
+
+					System.out.println ("Fichero no encontrado: " + argv [i]);
+
+				} catch (Exception ex) {
+
+					System.out.println ("Excepción inesperada: ");
+					ex.printStackTrace ();
+				}
+
+				/* Si existía el archivo y tenía la extensión ".prog", lo analiza */
+				if (scanner != null) {
+
+					System.out.println ("\n\n-------------------------------------------");
+					System.out.println ("Comenzando análisis del archivo " + argv [i]);
+					System.out.println ("-------------------------------------------\n");
+
+					analizador = new Parser (scanner);
+					scanner.setParser (analizador);
+
+					analizador.parse ();
+				}
+			}
+		}
+	}
+
+	/**
+	 * Error sintáctico
+	 */
+	public void syntax_error (Symbol s) {
+
+		Logger.error_sintáctico (s, "");
+	}
+
+	/**
+	 * Imprime un mensaje avisando sobre el error sintáctico, con el mensaje indicado como argumento.
+	 */
+	public void imprimir_error (String msg, Symbol s) {
+
+		Logger.error_sintáctico (s, msg);
+	}
+
+	/**
+	 * Imprime por STDERR el mensaje de error formateado para que aparezca como aclaración
+	 * después de que se haya llamado al método syntax_error(), al que se llama automáticamente
+	 * cuando llega un token inesperado.
+	 */
+	public void error_sintaxis (String mensaje) {
+
+		Logger.error_sintaxis (mensaje);
+	}
+
+	/**
+	 * Error sintáctico irrecuperable
+	 */
+	public void report_fatal_error (String message, Object info) {
+
+		done_parsing();
+
+		report_error ("Error fatal de sintaxis --> "
+			+ "No se puede recuperar del error y continuar con el análisis - "
+			+ message + " ",  (Symbol)info);
+
+		report_error ("** Final del análisis **", null);
+
+		imprimir_fin ();
+
+		System.exit(1);
+	}
+
+	/**
+	 * Mensaje de aviso (la sintaxis es correcta, pero la ejecución puede dar problemas).
+	 */
+	public void imprimir_aviso (String msg, Symbol s) {
+
+		Logger.aviso (s, msg);
+	}
+
+
+	/**
+	 * Imprime un pequeño resumen al terminar el análisis.
+	 */
+	public void imprimir_fin () {
+
+		/* Termina el análisis semántico */
+		if (árbol == null) {
+
+			Logger.error ("El árbol no se ha construido correctamente.");
+		} else {
+
+			árbol.comprobarÁrbol (tabla_sim);
+		}
+
+		System.out.println ("\n------------------\n" +
+				    "Análisis terminado\n" +
+				    "------------------");
+
+		scanner.imprimirTokens ();
+
+		if (árbol != null) {
+
+			System.out.println ("\nÁrbol sintáctico: ");
+			árbol.imprimir ();
+		}
+
+		System.out.println ("\n");
+		tabla_sim.imprimirTabla ();
+
+		Logger.imprimir_estadísticas ();
+	}
+
+	/**
+	 * Mensaje de aviso (la sintaxis es correcta, pero la ejecución puede dar problemas).
+	 * Método estático para poder ser usado por el árbol.
+	 */
+	public static void aviso (String msg, Symbol s) {
+
+		Logger.aviso (s, msg);
+	}
+
+
+        /**
+	 * Imprime un mensaje avisando sobre el error sintáctico, con el mensaje indicado como argumento.
+	 */
+	public static void error_sem (String msg, Symbol s) {
+
+		Logger.error_semántico (s, msg);
+	}
+:}
+
+/* --------------------------------- */
+/* Definición de símbolos terminales */
+/* --------------------------------- */
+terminal	ASIGNA,
+		SIGNO,
+		RES_PROG,
+		RES_IS,
+		RES_BEG,
+		RES_END,
+		IF,
+		THEN,
+		ELSE,
+		BUCLE,
+		DO;
+
+terminal String	IDENT,
+		RESERVADA,
+		ENTERO,
+		ENT_SAL;
+
+/* Booleanos */
+terminal	NOT,
+		AND,
+		OR;
+
+terminal String	BOOL;
+
+/* Operadores de relación */
+terminal	MENOR_IGUAL,
+		MENOR,
+		IGUAL,
+		MAYOR,
+		MAYOR_IGUAL,
+		NO_IGUAL;
+
+/* Operadores matemáticos */
+terminal	SUMA,
+		RESTA,
+		MULTI,
+		DIVI;
+
+/* Signos de puntuación */
+terminal	PARENT_AB,
+		PARENT_CERR,
+		COMA,
+		PUNTO_COMA,
+		DOS_PUNTOS;
+
+/* ------------------------------------ */
+/* Definición de símbolos no terminales */
+/* ------------------------------------ */
+non terminal		inicio,
+			programa;
+
+/* Bloque de declaración de variables */
+non terminal NodoDecl	declaraciones;
+non terminal NodoTipo	variable;
+
+/* Bloque de sentencias */
+non terminal NodoSents	bloque_sentencias;
+
+non terminal Nodo	sentencia,
+			condición,
+			valor,
+			valor_lógico,
+			op_lógica_aux,
+			valor_entero;
+
+non terminal		errores_sent;
+
+non terminal Symbol	op_matem,
+			op_multi,
+			op_suma,
+			op_bool,
+			sim_comp;
+
+non terminal NodoE_S	entrada_salida;
+
+non terminal NodoOp	operación_entera,
+			operación_lógica,
+			comparación;
+
+non terminal NodoAsigna asignación;
+
+non terminal NodoBucle	bucle;
+
+non terminal NodoIf	sent_condicional;
+
+/* ------------------------- */
+/* Precedencia de operadores */
+/* ------------------------- */
+precedence left OR;
+precedence left AND;
+precedence left NOT;
+precedence left MENOR, MAYOR, IGUAL, NO_IGUAL, MAYOR_IGUAL, MENOR_IGUAL;
+precedence left SUMA, RESTA;
+precedence left MULTI, DIVI;
+precedence right SIGNO;
+
+/* -------------------------- */
+/* Definición de la gramática */
+/* -------------------------- */
+start with inicio;
+
+inicio ::= programa {:
+
+		Logger.regla ("0", "INICIO ::= PROGRAMA");
+
+		parser.imprimir_fin ();
+	:};
+
+programa ::= RES_PROG IDENT:nombre RES_IS declaraciones:declar RES_BEG bloque_sentencias:sents RES_END {:
+
+		NodoProg raíz = new NodoProg (nombre);
+
+		raíz.añadirBloqueDecl (declar);
+		raíz.añadirBloqueSents (sents);
+
+		parser.árbol = new Árbol (raíz);
+
+		Logger.regla ("1a", "PROGRAMA ::= res_prog ident res_is DECLARACIONES res_beg BLOQUE_SENTENCIAS res_end");
+	:}
+	| {:
+
+		Logger.regla ("1b", "PROGRAMA ::= epsilon (cadena vacía)");
+	:}
+	| error:e RES_IS declaraciones:declar RES_BEG bloque_sentencias:sents RES_END {:
+
+		Logger.error_sintaxis ("El programa debe comenzar por la palabra 'program'");
+
+		NodoProg raíz = new NodoProg ("desconocido");
+
+		raíz.añadirBloqueDecl (declar);
+		raíz.añadirBloqueSents (sents);
+
+		parser.árbol = new Árbol (raíz);
+
+		Logger.regla ("1c", "PROGRAMA ::= ERROR res_is DECLARACIONES res_beg BLOQUE_SENTENCIAS res_end");
+	:}
+	| error:e declaraciones:declar RES_BEG bloque_sentencias:sents RES_END {:
+
+		Logger.error_sintaxis ("El bloque de declaraciones debe comenzar con la palabra reservada 'is'");
+
+		NodoProg raíz = new NodoProg ("desconocido");
+
+		raíz.añadirBloqueDecl (declar);
+		raíz.añadirBloqueSents (sents);
+
+		parser.árbol = new Árbol (raíz);
+
+		Logger.regla ("1d", "PROGRAMA ::= ERROR DECLARACIONES res_beg BLOQUE_SENTENCIAS res_end");
+	:}
+	;
+
+/* ------------------------------------------------- */
+/* ---- BLOQUE PARA LA DECLARACIÓN DE VARIABLES ---- */
+/* ------------------------------------------------- */
+declaraciones ::= RESERVADA:res variable:var PUNTO_COMA declaraciones:decl {:
+
+		if (!res.equals ("var")) {
+
+			Logger.error_sintáctico (new Symbol (Sym.RESERVADA, resleft, resright, res),
+						"El bloque de declaración de variables debe comenzar"
+						+ " con la palabra reservada 'var' (se encontró '"
+						+ res + "')");
+		}
+
+		RESULT = decl;
+
+		if (RESULT != null) {
+
+			RESULT.añadirTipo (var);
+		}
+
+		Logger.regla ("2a", "DECLARACIONES ::= reservada VARIABLE punto_coma DECLARACIONES");
+	:}
+	| {:
+		RESULT = new NodoDecl ();
+
+		Logger.regla ("2b", "DECLARACIONES ::= epsilon (cadena vacía)");
+	:}
+	| error:e PUNTO_COMA {:
+
+		Logger.error_sintaxis ("Declaración de variables incorrecta. Sintaxis correcta: "
+					+ " var identificador [, identificador [, identificador...]] : tipo");
+
+		RESULT = new NodoDecl ();
+
+
+		Logger.regla ("2c", "DECLARACIONES ::= ERROR punto_coma");
+	:}
+	;
+
+variable ::= IDENT:id DOS_PUNTOS RESERVADA:tipo {:
+
+		Symbol aux = new Symbol (Sym.IDENT, idleft, idright, id);
+		NodoVar var = new NodoVar (aux, id);
+		TipoDato dato = TipoDato.nulo;
+
+		switch (tipo) {
+
+			case "boolean":
+				dato = TipoDato.booleano;
+				break;
+
+			case "integer":
+				dato = TipoDato.entero;
+				break;
+			default:
+				Logger.error_sintáctico (new Symbol (Sym.RESERVADA, tipoleft, tiporight, tipo),
+							"Tipo de dato no válido ('" + tipo + "')");
+		}
+
+		var.verInfo ().cambiarTipo (dato);
+		parser.tabla_sim.cambiarÚltimoTipo (dato);
+
+		if (!dato.equals (TipoDato.nulo)) {
+
+			/* Comprueba que la variable no esté ya en la tabla de símbolos */
+			if (parser.tabla_sim.buscarID (id)) {
+
+				Logger.error_sintáctico (aux, "La variable '" + id + "' ya ha sido declarada.");
+			} else {
+
+				RESULT = new NodoTipo (dato);
+				parser.tabla_sim.añadirID (id, dato);
+
+				var.verInfo ().cambiarTipo (dato);
+
+				RESULT.añadirVar (var);
+			}
+		}
+
+		Logger.regla ("3a", "VARIABLE ::= ident dos_puntos reservada");
+	:}
+	| IDENT:id COMA variable:var {:
+
+		Symbol aux = new Symbol (Sym.IDENT, idleft, idright, id);
+		NodoVar ident = new NodoVar (aux, id);
+
+		RESULT = var;
+
+		if (!parser.tabla_sim.verÚltimoTipo ().equals (TipoDato.nulo)) {
+			/* Comprueba que la variable no esté ya declarada */
+			if (parser.tabla_sim.buscarID (id)) {
+
+				Logger.error_sintáctico (aux, "La variable '" + id + "' ya ha sido declarada.");
+			} else {
+
+				parser.tabla_sim.añadirID (id);
+
+				ident.verInfo ().cambiarTipo (parser.tabla_sim.verÚltimoTipo ());
+
+				if (RESULT == null) {
+
+					RESULT = new NodoTipo (parser.tabla_sim.verÚltimoTipo ());
+				}
+
+				RESULT.añadirVar (ident);
+			}
+		}
+
+		Logger.regla ("3b", "VARIABLE ::= ident coma VARIABLE");
+	:}
+	| IDENT:id error {:
+
+		Logger.error_sintaxis ("Se esperaba una coma (',') tras '" + id + "'");
+
+		Logger.regla ("3c", "VARIABLE ::= ident ERROR");
+	:}
+	;
+
+/* ---------------------------------------------- */
+/* ---- BLOQUE PARA LAS SENTENCIAS DE CÓDIGO ---- */
+/* ---------------------------------------------- */
+
+bloque_sentencias ::= sentencia:sent PUNTO_COMA bloque_sentencias:bloque {:
+
+			RESULT = bloque;
+
+			if (sent != null) {
+
+				RESULT.añadirSentencia (sent);
+			}
+
+			Logger.regla ("4a", "BLOQUE_SENTENCIAS ::= SENTENCIA punto_coma BLOQUE_SENTENCIAS");
+		:}
+		| sentencia:sent {:
+
+			RESULT = new NodoSents ();
+
+			if (sent != null) {
+
+				RESULT.añadirSentencia (sent);
+			}
+
+			Logger.regla ("4b", "BLOQUE_SENTENCIAS ::= SENTENCIA");
+		:}
+		;
+
+sentencia ::= entrada_salida:s {:
+
+		RESULT = s;
+
+		Logger.regla ("5a", "SENTENCIA ::= ENTRADA_SALIDA");
+	:}
+	| asignación:s {:
+
+		RESULT = s;
+
+		Logger.regla ("5b", "SENTENCIA ::= ASIGNACIÓN");
+	:}
+	| bucle:s {:
+
+		RESULT = s;
+
+		Logger.regla ("5c", "SENTENCIA ::= BUCLE");
+	:}
+	| sent_condicional:s {:
+
+		RESULT = s;
+
+		Logger.regla ("5d", "SENTENCIA ::= SENT_CONDICIONAL");
+	:}
+	| RESERVADA:s {:
+
+		Symbol aux = new Symbol (Sym.RESERVADA, sleft, sright, s);
+
+		if (!s.equals ("skip")) {
+
+			Logger.error_sintáctico (aux, "Sentencia incorrecta: '" + s + "'");
+		} else {
+			/* "skip" */
+			RESULT = new NodoVar (aux, "Reservada: skip");
+		}
+
+		Logger.regla ("5e", "SENTENCIA ::= reservada");
+	:}
+	| errores_sent {:
+
+		Logger.regla ("5f", "SENTENCIA ::= ERRORES_SENT");
+	:}
+	;
+
+	/* Símbolos que no deberían aparecer al prinicipio de una sentencia */
+	errores_sent ::= BOOL:s error {:
+
+			Logger.error_sintaxis ("Una sentencia no puede empezar por '" + s + "'");
+
+			Logger.regla ("6a", "ERRORES_SENT ::= bool ERROR");
+		:}
+		| sim_comp:s error {:
+
+			Logger.error_sintaxis ("Una sentencia no puede empezar por '" + s.value + "'");
+
+			Logger.regla ("6b", "ERRORES_SENT ::= SIM_COMP ERROR");
+		:}
+		| ENTERO:s error {:
+
+			Logger.error_sintaxis ("Una sentencia no puede empezar por '" + s + "'");
+
+			Logger.regla ("6c", "ERRORES_SENT ::= entero ERROR");
+		:}
+		| op_matem:s error {:
+
+			Logger.error_sintaxis ("Una sentencia no puede empezar por '" + s.value + "'");
+
+			Logger.regla ("6d", "ERRORES_SENT ::= OP_MATEM ERROR");
+		:}
+		| op_bool:s error {:
+
+			Logger.error_sintaxis ("Una sentencia no puede empezar por '" + s.value + "'");
+
+			Logger.regla ("6e", "ERRORES_SENT ::= OP_BOOL ERROR");
+		:}
+		;
+
+entrada_salida ::= ENT_SAL:res valor:val {:
+
+		RESULT = new NodoE_S (new Symbol (Sym.ENT_SAL, resleft, resright, res));
+
+		RESULT.añadirID (val);
+
+		Logger.regla ("7a", "ENTRADA_SALIDA ::= ent_sal VALOR");
+	:}
+	| ENT_SAL:s error {:
+
+		Logger.error_sintaxis ("Sintaxis correcta: [read | write] [valor_entero | identificador]");
+
+		RESULT = new NodoE_S (new Symbol (Sym.ENT_SAL, sleft, sright, s));
+
+		Logger.regla ("7b", "ENTRADA_SALIDA ::= ent_sal ERROR");
+	:}
+	;
+
+	valor_entero ::= ENTERO:e {:
+
+				NodoVar aux = new NodoVar (new Symbol (Sym.ENTERO, eleft, eright, e), "Entero: " + e);
+
+				aux.verInfo ().cambiarTipo (TipoDato.entero);
+				aux.verInfo ().cambiarValor (e);
+
+				RESULT = aux;
+
+				Logger.regla ("8a", "VALOR_ENTERO ::= entero");
+		:}
+		| SUMA IDENT:e {: 
+
+                                NodoVar aux = new NodoVar (new Symbol (Sym.IDENT, eleft, eright, e), e);
+
+                                aux.verInfo ().cambiarTipo (TipoDato.entero);
+
+                                RESULT = aux;
+
+				Logger.regla ("8b", "VALOR_ENTERO ::= suma ident");
+		:}
+			%prec SIGNO
+		| RESTA IDENT:e {:
+
+                                NodoVar aux = new NodoVar (new Symbol (Sym.IDENT, eleft, eright, e), "-" + e);
+
+                                aux.verInfo ().cambiarTipo (TipoDato.entero);
+
+                                RESULT = aux;
+
+				Logger.regla ("8c", "VALOR_ENTERO ::= resta ident");
+		:}
+			%prec SIGNO
+		| SUMA ENTERO:e {:
+
+                                NodoVar aux = new NodoVar (new Symbol (Sym.ENTERO, eleft, eright, e), "Entero: " + e);
+
+                                aux.verInfo ().cambiarTipo (TipoDato.entero);
+                                aux.verInfo ().cambiarValor (e);
+
+                                RESULT = aux;
+
+				Logger.regla ("8d", "VALOR_ENTERO ::= suma entero");
+		:}
+			%prec SIGNO
+		| RESTA ENTERO:e {:
+
+                                NodoVar aux = new NodoVar (new Symbol (Sym.ENTERO, eleft, eright, e), "Entero: -" + e);
+
+                                aux.verInfo ().cambiarTipo (TipoDato.entero);
+                                aux.verInfo ().cambiarValor ("-" + e);
+
+                                RESULT = aux;
+
+				Logger.regla ("8e", "VALOR_ENTERO ::= resta entero");
+		:}
+			%prec SIGNO
+		| operación_entera:op {:
+
+			RESULT = op;
+
+			Logger.regla ("8f", "VALOR_ENTERO ::= OPERACIÓN_ENTERA");
+		:}
+		;
+
+	operación_entera ::= valor_entero:izq op_multi:op valor_entero:der {: 
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("9a", "OPERACIÓN_ENTERA ::= VALOR_ENTERO OP_MULTI VALOR_ENTERO");
+		:}
+			%prec MULTI
+		| IDENT:id op_multi:op valor_entero:der {:
+
+			NodoVar izq = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+                        izq.verInfo ().cambiarTipo (TipoDato.entero);
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("9b", "OPERACIÓN_ENTERA ::= ident OP_MULTI VALOR_ENTERO");
+		:}
+			%prec MULTI
+		| IDENT:id1 op_multi:op IDENT:id2 {:
+
+                        NodoVar izq = new NodoVar (new Symbol (Sym.IDENT, id1left, id1right, id1), id1),
+				der = new NodoVar (new Symbol (Sym.IDENT, id2left, id2right, id2), id2);
+
+                        izq.verInfo ().cambiarTipo (TipoDato.entero);
+                        der.verInfo ().cambiarTipo (TipoDato.entero);
+
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("9c", "OPERACIÓN_ENTERA ::= ident OP_MULTI ident");
+		:}
+			%prec MULTI
+		| valor_entero:izq op_suma:op valor_entero:der {:
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("9d", "OPERACIÓN_ENTERA ::= VALOR_ENTERO OP_SUMA VALOR_ENTERO");
+		:}
+			%prec SUMA
+		| IDENT:id op_suma:op valor_entero:der {:
+
+			NodoVar izq = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+                        izq.verInfo ().cambiarTipo (TipoDato.entero);
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("9e", "OPERACIÓN_ENTERA ::= ident OP_SUMA VALOR_ENTERO");
+		:}
+			%prec SUMA
+		| IDENT:id1 op_suma:op IDENT:id2 {:
+
+                        NodoVar izq = new NodoVar (new Symbol (Sym.IDENT, id1left, id1right, id1), id1),
+				der = new NodoVar (new Symbol (Sym.IDENT, id2left, id2right, id2), id2);
+
+                        izq.verInfo ().cambiarTipo (TipoDato.entero);
+                        der.verInfo ().cambiarTipo (TipoDato.entero);
+
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("9f", "OPERACIÓN_ENTERA ::= ident OP_SUMA ident");
+		:}
+			%prec SUMA
+		| valor_entero:izq op_suma:op IDENT:id {:
+
+			NodoVar der = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+                        der.verInfo ().cambiarTipo (TipoDato.entero);
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("9g", "OPERACIÓN_ENTERA ::= VALOR_ENTERO OP_SUMA ident");
+		:}
+			%prec SUMA
+		| PARENT_AB operación_entera:op PARENT_CERR {:
+
+			RESULT = op;
+
+			Logger.regla ("9h", "OPERACIÓN_ENTERA ::= parent_ab OPERACIÓN_ENTERA parent_cerr");
+		:}
+		| valor_entero:izq op_multi:op IDENT:id {:
+
+			NodoVar der = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+                        der.verInfo ().cambiarTipo (TipoDato.entero);
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("9i", "OPERACIÓN_ENTERA ::= VALOR_ENTERO op_multi ident");
+		:}
+			%prec MULTI
+		| IDENT op_matem:op error {:
+
+			Logger.error_sintaxis ("La operación debe tener un operando a cada lado del operador.");
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			Logger.regla ("9j", "OPERACIÓN_ENTERA ::= ident OP_MATEM ERROR");
+		:}
+		| valor_entero op_matem:op error {:
+
+			Logger.error_sintaxis ("La operación debe tener un operando a cada lado del operador.");
+
+			RESULT = new NodoOp (TipoDato.entero, op);
+
+			Logger.regla ("9k", "OPERACIÓN_ENTERA ::= VALOR_ENTERO OP_MATEM ERROR");
+		:}
+		| PARENT_AB error:e {:
+
+			Logger.error_sintaxis ("Operación mal formada");
+
+			RESULT = new NodoOp (TipoDato.entero, new Symbol (Sym.error, eleft, eright, e));
+
+			Logger.regla ("9l", "OPERACIÓN_ENTERA ::= parent_ab ERROR");
+		:}
+		;
+
+	op_suma ::= SUMA:s {:
+
+			RESULT = new Symbol (Sym.SUMA, sleft, sright, s);
+
+			Logger.regla ("10a", "OP_SUMA ::= suma");
+		:}
+		| RESTA:s {:
+
+			RESULT = new Symbol (Sym.RESTA, sleft, sright, s);
+
+			Logger.regla ("10b", "OP_SUMA ::= resta");
+		:}
+		;
+
+	op_multi ::= MULTI:s {:
+
+			RESULT = new Symbol (Sym.MULTI, sleft, sright, s);
+
+			Logger.regla ("11a", "OP_MULTI ::= multi");
+		:}
+		| DIVI:s {:
+
+			RESULT = new Symbol (Sym.DIVI, sleft, sright, s);
+
+			Logger.regla ("11b", "OP_MULTI ::= divi");
+		:}
+		;
+
+
+
+	op_matem ::= op_multi:s {:
+
+			RESULT = s;
+
+			Logger.regla ("12a", "OP_MATEM ::= OP_MULTI");
+		:}
+		| op_suma:s {:
+
+			RESULT = s;
+
+			Logger.regla ("12b", "OP_MATEM ::= OP_SUMA");
+		:}
+		;
+
+
+asignación ::= IDENT:id ASIGNA:op valor:val {:
+
+		NodoVar variable = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+		/* Busca la información sobre la variable en la tabla de símbolos */
+                Info info = parser.tabla_sim.obtenerID (id);
+
+                /* Si no se ha encontrado, asume el tipo necesario (ya se lanzará el error en el
+		 análisis del árbol) */
+		if (info != null) {
+
+			variable.verInfo ().cambiarTipo (info.verTipo ());
+                }
+
+		RESULT = new NodoAsigna (new Symbol (Sym.ASIGNA, opleft, opright, op));
+
+		RESULT.añadirVariable (variable);
+		RESULT.añadirParteDer (val);
+
+		Logger.regla ("13a", "ASIGNACIÓN ::= ident asigna VALOR");
+	:}
+	| IDENT:id ASIGNA error {:
+
+		Logger.error_sintaxis ("Expresión de asignación mal formada");
+
+		Logger.regla ("13b", "ASIGNACIÓN ::= ident asigna ERROR");
+	:}
+	;
+
+	valor ::= IDENT:id  {:
+
+			NodoVar aux = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+			/* Busca la información sobre la variable en la tabla de símbolos */
+			Info info = parser.tabla_sim.obtenerID (id);
+
+			/* Si no se ha encontrado, asume que es de tipo entero */
+			if (info != null) {
+
+				aux.verInfo ().cambiarTipo (info.verTipo ());
+			}
+
+			RESULT = aux;
+
+			Logger.regla ("14a", "VALOR ::= ident");
+		:}
+		| valor_lógico:val {:
+
+			RESULT = val;
+
+			Logger.regla ("14b", "VALOR ::= VALOR_LÓGICO");
+		:}
+		| valor_entero:val {:
+
+			RESULT = val;
+
+			Logger.regla ("14c", "VALOR ::= VALOR_ENTERO");
+		:}
+		| operación_lógica:op {:
+
+			RESULT = op;
+
+			Logger.regla ("14d", "VALOR ::= OPERACIÓN_LÓGICA");
+		:}
+		;
+
+	operación_lógica ::= valor_lógico:izq op_bool:op op_lógica_aux:der {:
+
+			RESULT = new NodoOp (TipoDato.booleano, op);
+
+                        RESULT.añadirParteIzq (izq);
+                        RESULT.añadirParteDer (der);
+
+			Logger.regla ("15a", "OPERACIÓN_LÓGICA ::= VALOR_LÓGICO OP_BOOL OP_LÓGICA_AUX");
+		:}
+		| IDENT:id op_bool:op op_lógica_aux:der {:
+
+			NodoVar izq = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+			izq.verInfo ().cambiarTipo (TipoDato.booleano);
+
+			RESULT = new NodoOp (TipoDato.booleano, op);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("15b", "OPERACIÓN_LÓGICA ::= ident OP_BOOL OP_LÓGICA_AUX");
+		:}
+		| comparación:cmp {:
+
+			RESULT = cmp;
+
+			Logger.regla ("15c", "OPERACIÓN_LÓGICA ::= COMPARACIÓN");
+		:}
+		| IDENT op_bool:op error {:
+
+			Logger.error_sintaxis ("La operación debe tener un operando a cada lado del operador lógico.");
+
+			RESULT = new NodoOp (TipoDato.booleano, op);
+
+			Logger.regla ("15d", "OPERACIÓN_LÓGICA ::= ident OP_BOOL ERROR");
+		:}
+		| valor_lógico op_bool:op error {:
+
+			Logger.error_sintaxis ("La operación debe tener un operando a cada lado del operador lógico.");
+
+			RESULT = new NodoOp (TipoDato.booleano, op);
+
+			Logger.regla ("15e", "OPERACIÓN_LÓGICA ::= VALOR_LÓGICO OP_BOOL ERROR");
+		:}
+		;
+
+	op_bool ::= AND:s {:
+
+			RESULT = new Symbol (Sym.AND, sleft, sright, s);
+
+			Logger.regla ("16a", "OP_BOOL ::= and");
+		:}
+		| OR:s {:
+
+			RESULT = new Symbol (Sym.OR, sleft, sright, s);
+
+			Logger.regla ("16b", "OP_BOOL ::= or");
+		:}
+		;
+
+	valor_lógico ::= BOOL:b {:
+
+			NodoVar aux = null;
+
+			switch (b) {
+
+				case "true":
+					aux = new NodoVar (new Symbol (Sym.BOOL, bleft, bright, b), "true");
+
+					aux.verInfo ().cambiarTipo (TipoDato.booleano);
+					aux.verInfo ().cambiarValor ("true");
+					break;
+
+				case "false":
+					aux =  new NodoVar (new Symbol (Sym.BOOL, bleft, bright, b), "false");
+
+					aux.verInfo ().cambiarTipo (TipoDato.booleano);
+					aux.verInfo ().cambiarValor ("false");
+					break;
+
+				default:
+					aux = new NodoVar (new Symbol (Sym.BOOL, bleft, bright, b), b);
+			}
+
+			RESULT = aux;
+
+			Logger.regla ("17a", "VALOR_LÓGICO ::= bool");
+		:}
+		| NOT PARENT_AB BOOL:b PARENT_CERR {:
+
+			NodoVar aux = null;
+
+			switch (b) {
+
+				case "true":
+					aux = new NodoVar (new Symbol (Sym.BOOL, bleft, bright, b), "true");
+
+					aux.verInfo ().cambiarTipo (TipoDato.booleano);
+					aux.verInfo ().cambiarValor ("true");
+					break;
+
+				case "false":
+					aux =  new NodoVar (new Symbol (Sym.BOOL, bleft, bright, b), "false");
+
+					aux.verInfo ().cambiarTipo (TipoDato.booleano);
+					aux.verInfo ().cambiarValor ("false");
+					break;
+
+				default:
+					aux = new NodoVar (new Symbol (Sym.BOOL, bleft, bright, b), b);
+			}
+
+			Info info = parser.tabla_sim.obtenerID (b);
+
+			/* Marca el nodo para que se tenga en cuenta el valor negado */
+			aux.negar ();
+
+			RESULT = aux;
+
+			Logger.regla ("17b", "VALOR_LÓGICO ::= not parent_ab bool parent_cerr");
+
+		:}
+		| NOT PARENT_AB operación_lógica:op PARENT_CERR {:
+
+			/* Marca la operación para negar su valor */
+			op.negar ();
+			RESULT = op;
+
+			Logger.regla ("17c", "VALOR_LÓGICO ::= not parent_ab OPERACIÓN_LÓGICA parent_cerr");
+		:}
+		| NOT PARENT_AB IDENT:id PARENT_CERR {:
+
+			NodoVar aux = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+			Info info = parser.tabla_sim.obtenerID (id);
+
+			/* Marca el nodo para que se tenga en cuenta el valor negado */
+			aux.negar ();
+
+			RESULT = aux;
+
+			Logger.regla ("17d", "VALOR_LÓGICO ::= not parent_ab ident parent_cerr");
+		:}
+		| PARENT_AB operación_lógica:op PARENT_CERR {:
+
+			RESULT = op;
+
+			Logger.regla ("17e", "VALOR_LÓGICO ::= parent_ab OPERACIÓN_LÓGICA parent_cerr");
+		:}
+		| NOT PARENT_AB error PARENT_CERR {:
+
+			Logger.error_sintaxis ("La expresión lógica negada debe ser una operación, "
+						+ "un identificador o un booleano entre paréntesis: "
+						+ "not([bool | ident | op_bool])");
+
+			RESULT = new NodoVar (null, null);
+
+			Logger.regla ("17f", "VALOR_LÓGICO ::= not parent_ab ERROR parent_cerr");
+		:}
+		| NOT error {:
+
+			Logger.error_sintaxis ("La expresión lógica negada debe ser una operación, "
+                                                + "un identificador o un booleano entre paréntesis: "
+                                                + "not([bool | ident | op_bool])");
+
+			RESULT = new NodoVar (null, null);
+
+			Logger.regla ("17g", "VALOR_LÓGICO ::= not ERROR");
+		:}
+		;
+
+	op_lógica_aux ::= valor_lógico:val {:
+
+			RESULT = val;
+
+			Logger.regla ("18a", "OP_LÓGICA_AUX ::= VALOR_LÓGICO");
+		:}
+		| IDENT:id {:
+
+			NodoVar aux = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+			aux.verInfo ().cambiarTipo (TipoDato.booleano);
+
+
+			RESULT = aux;
+
+			Logger.regla ("18b", "OP_LÓGICA_AUX ::= ident");
+		:}
+		| valor_lógico:izq op_bool:op operación_lógica:der {:
+
+			NodoOp aux = new NodoOp (TipoDato.booleano, op);
+
+			aux.añadirParteIzq (izq);
+			aux.añadirParteDer (der);
+
+			RESULT = aux;
+
+			Logger.regla ("18c", "OP_LÓGICA_AUX ::= VALOR_LÓGICO OP_BOOL OPERACIÓN_LÓGICA");
+		:}
+		;
+
+	comparación ::= valor_entero:izq sim_comp:cmp valor_entero:der {:
+
+			RESULT = new NodoOp (TipoDato.booleano, cmp);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("19a", "COMPARACIÓN ::= VALOR_ENTERO SIM_COMP VALOR_ENTERO");
+		:}
+		| valor_lógico:izq IGUAL:s valor_lógico:der {:
+
+			Symbol cmp = new Symbol (Sym.IGUAL, sleft, sright, s);
+
+			RESULT = new NodoOp (TipoDato.booleano, cmp);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("19b", "COMPARACIÓN ::= VALOR_LÓGICO igual VALOR_LÓGICO");
+		:}
+		| valor_lógico:izq NO_IGUAL:s valor_lógico:der {:
+
+			Symbol cmp = new Symbol (Sym.NO_IGUAL, sleft, sright, s);
+
+			RESULT = new NodoOp (TipoDato.booleano, cmp);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("19c", "COMPARACIÓN ::= VALOR_LÓGICO no_igual VALOR_LÓGICO");
+		:}
+		| IDENT:id sim_comp:cmp valor:der {:
+
+			NodoVar izq = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+			/* Busca la información sobre la variable en la tabla de símbolos */
+                        Info info = parser.tabla_sim.obtenerID (id);
+
+                        /* Si no se ha encontrado, deja los valores por defecto */
+                        if (info != null) {
+
+				izq.verInfo ().cambiarTipo (info.verTipo ());
+                        }
+
+			RESULT = new NodoOp (TipoDato.booleano, cmp);
+
+			RESULT.añadirParteIzq (izq);
+			RESULT.añadirParteDer (der);
+
+			Logger.regla ("19d", "COMPARACIÓN ::= ident SIM_COMP VALOR");
+		:}
+		| IDENT sim_comp:s error {:
+
+			Logger.error_sintaxis ("La expresión de la parte derecha de la comparación no es correcta.");
+
+			RESULT = new NodoOp (TipoDato.booleano, s);
+
+			Logger.regla ("19e", "COMPARACIÓN ::= ident SIM_COMP ERROR");
+		:}
+		| error sim_comp:s error {:
+
+			Logger.error_sintaxis ("La expresión de la parte izquierda de la comparación no es correcta.");
+
+			RESULT = new NodoOp (TipoDato.booleano, s);
+
+			Logger.regla ("19f", "COMPARACIÓN ::= ERROR SIM_COMP ERROR");
+		:}
+		;
+
+	sim_comp ::= MENOR_IGUAL:s {:
+
+			RESULT = new Symbol (Sym.MENOR_IGUAL, sleft, sright, s);
+
+			Logger.regla ("20a", "SIM_COMP ::= menor_igual");
+		:}
+		| MENOR:s {:
+
+			RESULT = new Symbol (Sym.MENOR, sleft, sright, s);
+
+			Logger.regla ("20b", "SIM_COMP ::= menor");
+		:}
+		| IGUAL:s {:
+
+			RESULT = new Symbol (Sym.IGUAL, sleft, sright, s);
+
+			Logger.regla ("20c", "SIM_COMP ::= igual");
+		:}
+		| MAYOR:s {:
+
+			RESULT = new Symbol (Sym.MAYOR, sleft, sright, s);
+
+			Logger.regla ("20d", "SIM_COMP ::= mayor");
+		:}
+		| MAYOR_IGUAL:s {:
+
+			RESULT = new Symbol (Sym.MAYOR_IGUAL, sleft, sright, s);
+
+			Logger.regla ("20e", "SIM_COMP ::= mayor_igual");
+		:}
+		| NO_IGUAL:s {:
+
+			RESULT = new Symbol (Sym.NO_IGUAL, sleft, sright, s);
+
+			Logger.regla ("20f", "SIM_COMP ::= no_igual");
+		:}
+		;
+
+bucle ::= BUCLE condición:cond DO bloque_sentencias:sents RES_END BUCLE {:
+
+		RESULT = new NodoBucle ();
+
+		RESULT.añadirCondición (cond);
+		RESULT.añadirSentencias (sents);
+
+		Logger.regla ("21a", "BUCLE ::= bucle CONDICIÓN do BLOQUE_SENTENCIAS res_end bucle");
+	:}
+	| error RES_END BUCLE {:
+
+		Logger.error_sintaxis ("El bucle no está correctamente declarado. Sintaxis correcta: "
+					+ "while [condición] do (sentencias) end while");
+
+		RESULT = new NodoBucle ();
+
+		Logger.regla ("21b", "BUCLE ::= ERROR res_end bucle");
+	:}
+	;
+
+	condición ::= valor_lógico:val {:
+
+			RESULT = val;
+
+			Logger.regla ("22a", "CONDICIÓN ::= VALOR_LÓGICO");
+		:}
+		| IDENT:id {:
+
+			NodoVar aux = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+
+			aux.verInfo ().cambiarTipo (TipoDato.booleano);
+
+			RESULT = aux;
+
+			Logger.regla ("22b", "CONDICIÓN ::= ident");
+		:}
+		| IDENT:id op_bool:op op_lógica_aux:der {:
+
+                        NodoVar izq = new NodoVar (new Symbol (Sym.IDENT, idleft, idright, id), id);
+			NodoOp aux;
+
+                        izq.verInfo ().cambiarTipo (TipoDato.booleano);
+
+                        aux = new NodoOp (TipoDato.booleano, op);
+
+                        aux.añadirParteIzq (izq);
+			aux.añadirParteDer (der);
+
+			RESULT = aux;
+
+			Logger.regla ("22c", "CONDICIÓN ::= ident OP_BOOL OP_LÓGICA_AUX");
+		:}
+		| valor_lógico:izq op_bool:op op_lógica_aux:der {:
+
+                        NodoOp aux;
+
+                        aux = new NodoOp (TipoDato.booleano, op);
+
+                        aux.añadirParteIzq (izq);
+                        aux.añadirParteDer (der);
+
+                        RESULT = aux;
+
+                        Logger.regla ("22d", "CONDICIÓN ::= VALOR_LÓGICO OP_BOOL OP_LÓGICA_AUX");
+		:}
+		| comparación:cmp {:
+
+			RESULT = cmp;
+
+			Logger.regla ("22e", "CONDICIÓN ::= COMPARACIÓN");
+		:}
+		| error {:
+
+			Logger.error_sintaxis ("Condición mal formada.");
+
+			RESULT = new NodoVar (null, null);
+
+			Logger.regla ("22f", "CONDICIÓN ::= ERROR");
+		:}
+		;
+
+
+sent_condicional ::= IF condición:cond THEN bloque_sentencias:bloque RES_END IF {:
+
+		RESULT = new NodoIf ();
+
+		RESULT.añadirCondición (cond);
+		RESULT.añadirIf (bloque);
+
+		Logger.regla ("23a", "SENT_CONDICIONAL ::= if CONDICIÓN then BLOQUE_SENTENCIAS res_end id");
+	:}
+	| IF condición:cond THEN bloque_sentencias:bloque_if ELSE bloque_sentencias:bloque_else RES_END IF {:
+
+		RESULT = new NodoIf ();
+
+		RESULT.añadirCondición (cond);
+
+		RESULT.añadirIf (bloque_if);
+		RESULT.añadirElse (bloque_else);
+
+		Logger.regla ("23b", "SENT_CONDICIONAL ::= if CONDICIÓN then BLOQUE_SENTENCIAS else BLOQUE_SENTENCIAS res_end if");
+	:}
+	| IF condición error:e RES_END IF {:
+
+		Logger.error_sintaxis ("Construcción incorrecta de la sentencia condicional. "
+					 + "Sintaxis correcta: if [condición] then [sentencias] (else [sentencias]) end if");
+		RESULT = new NodoIf ();
+
+		Logger.regla ("23c", "SENT_CONDICIONAL ::= if CONDICIÓN ERROR res_end if");
+	:}
+	| IF error:e RES_END IF {:
+
+		Logger.error_sintaxis ("Construcción incorrecta de la sentencia condicional. "
+					 + "Sintaxis correcta: if [condición] then [sentencias] (else [sentencias]) end if");
+		RESULT = new NodoIf ();
+
+		Logger.regla ("23d", "SENT_CONDICIONAL ::= if ERROR res_end if");
+	:}
+	| error RES_END IF {:
+
+		Logger.error_sintaxis ("Expresión condicional mal formada. "
+					+ "Sintaxis correcta: if [condición] then [sentencias] (else [sentencias]) end if");
+
+		RESULT = new NodoIf ();
+
+		Logger.regla ("23e", "SENT_CONDICIONAL ::= ERROR res_end if");
+	:}
+	;
+

@@ -1,0 +1,41 @@
+/**
+ * Prueba de las especificaciones semánticas 4 a 8
+ */
+program test is
+
+	var entero,aux: integer;
+	var bool : boolean;
+	var variable : boolean;
+
+begin
+	/* Prueba la concordancia de tipos (EspSemt4) */
+	entero := true;
+	bool := 3;
+
+	cero := 0;
+	entero := 23;
+	bool := false;
+
+	/* Prueba de concordancia de tipos en operación entera (EspSemt5) */
+	entero := entero + bool * 5 -4;
+	entero := entero * 4;
+
+	/* Prueba de concordancia de tipos en operación booleana (EspSemt6) */
+	aux := true;
+	bool := (bool or true) and not (entero <> 23 * 4);
+
+	/* Prueba de concordancia de tipos en 'read' (EspSemt7) */
+	read aux;
+	read variable;
+	read 3;
+	read aux + 5;
+
+	/* Prueba de concordancia de tipos en operación entera (EspSemt5) */
+	write bool;
+	write entero;
+
+	write bool and (entero > 30);
+	write 6547 * 5 / 2;
+
+	skip
+end

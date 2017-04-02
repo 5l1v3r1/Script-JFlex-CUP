@@ -1,0 +1,32 @@
+/**
+ * Prueba las especificaciones sintácticas 6 a 8
+ */
+program prueba is
+
+	var aux : integer;
+
+	var SKIP : integer;	/* <-- El identificador no es la palabra reservada 'skip', así que se admite */
+	var skip : boolean;	/* <-- Declaración de identificador llamado como la palabra reservada 'skip' (EspSint7) */
+
+begin
+	read aux;
+
+	if (aux > 3)		/* <-- Comparación de enteros (EspSint6) */
+	then
+		write aux;
+
+		if ((aux < 100) and ((aux / 100) >= 2))	/* <-- Comparación de expresiones enteras (EspSint6) */
+		then
+			aux := 3
+
+		end if
+
+	end if;
+
+	/* Prueba de la precedencia de operadores (EspSint8) */
+	aux := 1 * 2 - + 3;	/* aux := -1 */
+	SKIP := 1 +- 2 * -3;	/* SKIP := 7 */
+	Skip := sKiP + 1;	/* SKIP++ -> SKIP vale 8 */
+
+	skip
+end

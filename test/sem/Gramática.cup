@@ -1,0 +1,185 @@
+/* ------------------------- */
+/* Precedencia de operadores */
+/* ------------------------- */
+precedence left or;
+precedence left and;
+precedence left not;
+precedence left menor, mayor, igual, no_igual, mayor_igual, menor_igual;
+precedence left suma, resta;
+precedence left multi, divi;
+precedence right signo;
+
+/* -------------------------- */
+/* Definición de la gramática */
+/* -------------------------- */
+start with INICIO;
+
+INICIO ::= PROGRAMA;
+
+PROGRAMA ::= res_prog ident res_is DECLARACIONES res_beg BLOQUE_SENTENCIAS res_end 
+	|	
+	| ERROR res_is DECLARACIONES res_beg BLOQUE_SENTENCIAS res_end 
+	| ERROR DECLARACIONES res_beg BLOQUE_SENTENCIAS res_end 
+	;
+
+/* ------------------------------------------------- */
+/* ---- Bloque para la declaración de variables ---- */
+/* ------------------------------------------------- */
+DECLARACIONES ::= reservada VARIABLE punto_coma DECLARACIONES 
+	| 
+	| ERROR punto_coma 
+	;
+
+VARIABLE ::= ident dos_puntos reservada 
+	| ident coma VARIABLE 
+	| ident ERROR 
+	;
+
+/* ---------------------------------------------- */
+/* ---- Bloque para las sentencias de código ---- */
+/* ---------------------------------------------- */
+
+BLOQUE_SENTENCIAS ::= SENTENCIA punto_coma BLOQUE_SENTENCIAS 
+		| SENTENCIA 
+		;
+
+SENTENCIA ::= ENTRADA_SALIDA
+	| ASIGNACIÓN 
+	| BUCLE
+	| SENT_CONDICIONAL
+	| reservada /* "skip" */
+	| ERRORES_SENT 
+	;
+
+	/* Símbolos que no deberían aparecer al principio de una sentencia */
+	ERRORES_SENT ::= bool ERROR 
+		| SIM_COMP ERROR 
+		| entero ERROR 
+		| OP_MATEM ERROR 
+		| OP_BOOL ERROR 
+		;
+
+ENTRADA_SALIDA ::= ent_sal VALOR 
+	| ent_sal ERROR 
+	;
+
+	VALOR_ENTERO ::= entero 
+		| suma ident 
+			%prec signo
+		| resta ident 
+			%prec signo
+		| suma entero 
+			%prec signo
+		| resta entero 
+			%prec signo
+		| OPERACIÓN_ENTERA  
+		;
+
+	OPERACIÓN_ENTERA ::= VALOR_ENTERO OP_MULTI VALOR_ENTERO 
+			%prec multi
+		| ident OP_MULTI VALOR_ENTERO 
+			%prec multi
+		| ident OP_MULTI ident 
+			%prec multi
+		| VALOR_ENTERO OP_MULTI ident 
+			%prec multi
+		| VALOR_ENTERO OP_SUMA VALOR_ENTERO 
+			%prec suma
+		| ident OP_SUMA VALOR_ENTERO 
+			%prec suma
+		| ident OP_SUMA ident 
+			%prec suma
+		| VALOR_ENTERO OP_SUMA ident 
+			%prec suma
+		| parent_ab OPERACIÓN_ENTERA parent_cerr 
+		| ident OP_MATEM ERROR 
+		| VALOR_ENTERO OP_MATEM ERROR 
+		| parent_ab ERROR 
+		;
+
+	OP_SUMA ::= suma 
+		| resta
+		;
+
+	OP_MULTI ::= multi
+		| divi
+		;
+			
+			
+
+	OP_MATEM ::= OP_MULTI 
+		| OP_SUMA
+		;
+
+
+ASIGNACIÓN ::= ident asigna VALOR 
+	| ident asigna ERROR
+	;
+
+	VALOR ::= ident  
+		| VALOR_LÓGICO 
+		| VALOR_ENTERO 
+		| OPERACIÓN_LÓGICA 
+		;
+		
+	OPERACIÓN_LÓGICA ::= VALOR_LÓGICO OP_BOOL OP_LÓGICA_AUX 
+		| ident OP_BOOL OP_LÓGICA_AUX 
+		| COMPARACIÓN 
+		| ident OP_BOOL ERROR 
+		| VALOR_LÓGICO OP_BOOL ERROR 
+		;
+
+	OP_BOOL ::= and
+		| or
+		;
+
+	VALOR_LÓGICO ::= bool
+		| not parent_ab bool parent_cerr 
+		| not parent_ab OPERACIÓN_LÓGICA parent_cerr 
+		| not parent_ab ident parent_cerr 
+		| parent_ab OPERACIÓN_LÓGICA parent_cerr 
+		| not parent_ab ERROR parent_cerr
+		| not ERROR 
+		;
+
+	OP_LÓGICA_AUX ::= VALOR_LÓGICO 
+		| ident 
+		| VALOR_LÓGICO OP_BOOL OPERACIÓN_LÓGICA 
+		;
+
+	COMPARACIÓN ::= VALOR_ENTERO SIM_COMP VALOR_ENTERO 
+		| VALOR_LÓGICO igual VALOR_LÓGICO 
+		| VALOR_LÓGICO no_igual VALOR_LÓGICO 
+		| ident SIM_COMP VALOR 
+		| ident SIM_COMP ERROR 
+		| ERROR SIM_COMP ERROR 
+		;
+
+	SIM_COMP ::= menor_igual 
+		| menor 
+		| igual 
+		| mayor 
+		| mayor_igual 
+		| no_igual 
+		;
+
+BUCLE ::= bucle CONDICIÓN do BLOQUE_SENTENCIAS res_end bucle 
+	| ERROR res_end bucle 
+	;
+
+	CONDICIÓN ::= VALOR_LÓGICO 
+		| ident 
+		| ident OP_BOOL OP_LÓGICA_AUX
+		| VALOR_LÓGICO OP_BOOL OP_LÓGICA_AUX 
+		| COMPARACIÓN 
+		| ERROR 
+		;
+
+
+SENT_CONDICIONAL ::= if CONDICIÓN then BLOQUE_SENTENCIAS res_end if 
+	| if CONDICIÓN then BLOQUE_SENTENCIAS else BLOQUE_SENTENCIAS res_end if 
+	| if CONDICIÓN ERROR res_end if 
+	| if ERROR res_end if 
+	| ERROR res_end if 
+	;
+

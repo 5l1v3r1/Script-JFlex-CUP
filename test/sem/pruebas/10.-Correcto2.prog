@@ -1,0 +1,62 @@
+/**
+ * Programa correcto para probar el analizador.
+ *
+ *  No realiza ninguna tarea en concreto. Las
+ * sentencias sólo se han puesto para demostrar
+ * el funcionamiento del analizador con expresiones
+ * complejas y ramas (if-else) diversas.
+ */
+program nombre
+is
+	var mayor,
+	    bool1 : boolean;
+
+	var int1,
+	    int2,
+	    int3 : integer;
+
+	var valor : integer;
+
+begin
+	int1 := 65876;
+	valor := 0;
+
+	read int2;
+	read int3;
+
+	mayor := (int2 > int3);
+	bool1 := (int3 <> int1);
+
+	if mayor
+	then
+		write int2;
+
+		if (int1 < int2) and bool1
+		then
+			while int2 <= int1
+			do
+				int2 := int2 + 1;
+
+				valor := (int2 * int1 + valor)
+					 / int3 * 4
+					 + - 3 --5;
+
+				if int2 / 100 = 0
+				then
+					write int2
+				end if
+
+			end while;
+
+			write int2
+		else
+			valor := int2;
+
+			write int1
+		end if
+	else
+		valor := int3
+	end if;
+
+	write valor
+end

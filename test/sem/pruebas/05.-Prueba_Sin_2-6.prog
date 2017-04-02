@@ -1,0 +1,41 @@
+/**
+ * Comprueba los requisitos sintácticos 2 a 6
+ */
+program nombre is
+
+	var variable : boolean;
+	var entero : integer;
+	var test prueba : integer;	/* <-- Error en la declaración (ReqSint3) */
+
+begin
+
+	read entero;
+	variable := entero < 100;
+
+	/* Comprobación del 'else ambiguo' (ReqSint2) */
+	if entero > 5
+	then
+		if variable
+		then
+			write 100
+		else
+			write entero + 3
+		end if
+	end if;
+
+	/* Detección de expresiones mal formadas (ReqSint3) */
+	1 + + 2;
+	entero := (3+ 4;
+
+	if entero = (3 + 4
+	then
+		write true
+	else
+		write false
+	end if;
+
+	/* ReqSint4, ReqSint5 y ReqSint6 comprobados al mostrar los errores producidos
+	anteriormente y el árbol final */
+
+	write entero
+end
