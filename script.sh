@@ -402,8 +402,8 @@ main ()
 
 				        "No" )
 						echo -e "Para ejecutar el archivo, usar"\
-							" la orden 'java [-cp $CP]"\
-							" $MAIN [-a $ARGS]'"
+							" la orden '$INTERP [-cp $CP]"\
+							" $MAIN $ARGS'"
 						exit;;
 				esac
 			done
