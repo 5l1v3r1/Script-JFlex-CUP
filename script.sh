@@ -114,8 +114,8 @@ comprobar_args ()
 	salida=$(getopt --options $OP_CORTAS --longoptions $OP_LARGAS \
 		 --name "$0" -- "$@")
 
-	if [[ $? != 0 ]]; then
-
+	if [[ $? != 0 ]]
+	then
 		# Getopt devolvió error (argumentos desconocidos o mal usados)
 		exit -2
 	fi
@@ -164,10 +164,10 @@ comprobar_args ()
 
 			-l|--clean|--limpiar)
 				echo -e "-> Eliminando carpeta '$OUTDIR'"
-				rm -rfv "$DIR/$OUTDIR"
+				rm -rfv "${DIR:?}/$OUTDIR"
 				echo -e "-> Hecho <- "
 				echo -e "-> Eliminando carpeta '$SRCDIR'"
-				rm -rfv "$DIR/$SRCDIR"
+				rm -rfv "${DIR:?}/$SRCDIR"
 				echo -e "-> Hecho <- "
 
 				echo "Tareas terminadas."
@@ -209,13 +209,14 @@ crear_fuentes ()
 {
 	echo "Creando archivos .java"
 	echo -e "\n-Parte 1: JFlex"
-	salida=$(jflex -v "$NOMBRE_LEX" -d "$SRCDIR")
-	ret_val=0
 
-	if [[ "$salida" =~ .error. ]]
+	salida="$(jflex -v $NOMBRE_LEX -d $SRCDIR)"
+
+#	if [[ "$salida" =~ .error. ]]
+	if [[ $? != 0 ]]
 	then
 		echo -e "Error al crear el archivo .java: \n $salida" >&2
-		exit -1;
+		return 2;
 	fi
 
 	# La salida de jflex proporciona información sobre el nombre del archivo .java
@@ -226,7 +227,7 @@ crear_fuentes ()
 	if [ ! -f "$NOMBRE" ]
 	then
 		echo -e "Error creando el archivo '$NOMBRE' con JFlex" >&2
-		return -1;
+		return 2;
 	else
 		echo -e "Archivo '$NOMBRE' creado correctamente."
 	fi
@@ -255,7 +256,7 @@ crear_fuentes ()
 		if [ ! -f "$SRCDIR/$MAIN.java" ] && [ ! -f "$SRCDIR/$SYM.java" ]
 		then
 			echo -e "Error creando el archivo '$NOMBRE' con CUP" >&2
-			return -1;
+			return 2;
 		else
 			echo -e "Archivos $SRCDIR/$MAIN.java y $SRCDIR/$SYM.java"\
 				" creados correctamente."
@@ -273,14 +274,17 @@ compilar ()
 
 	# Crea el archivo .class (redirecciona stderr a stdout
 	# y almacena la salida en una variable)
-	salida=$("$COMPIL" -cp "$CP" -d "$OUTDIR" $(find "$SRCDIR" -name '*.java') \
-		-Xdiags:verbose -Xlint:unchecked 2>&1)
+	fuentes="$(find "$SRCDIR" -name '*.java')"
+	salida="$("$COMPIL" -cp "$CP" -d "$OUTDIR" $fuentes \
+		-Xdiags:verbose -Xlint:unchecked 2>&1)"
+
 
 	# Comprueba si hay errores
-	if [[ "$salida" =~ .error. ]]
+#	if [[ "$salida" =~ .error. ]]
+	if [[ $? != 0 ]]
 	then
 		echo -e "Errores en el código: \n $salida"
-		return -1;
+		return 2;
 	else
 		echo -e "Compilación correcta \n $salida"
 	fi
@@ -331,7 +335,7 @@ ejecutar_sin ()
 		echo -e "Ejecutando $RUTA"
                 echo -e "--------------\n"
 
-		"$INTERP" -cp "$CP" "$RUTA" ${ARGS[@]}
+		"$INTERP" -cp "$CP" "$RUTA" "${ARGS[@]}"
 	else
 		echo "$0: Error al intentar ejecutar Parser.class (no se ha encontrado)" >&2
 	fi
@@ -366,8 +370,8 @@ main ()
 
 		# Copia todos los archivos .java auxiliares que pueda haber en
 		# la carpeta actual en la carpeta src/
-		aux=$(find . -name "*.java" -not -path "*$SRCDIR*" 2>/dev/null | wc -l)
-		if [ $aux != 0 ]
+		aux="$(find . -name "*.java" -not -path "*$SRCDIR*" 2>/dev/null | wc -l)"
+		if [ "$aux" != 0 ]
 		then
 			echo "Copiando los archivos .java auxiliares..."
 			cp --parents -v $(find . -name '*.java'\

@@ -172,9 +172,6 @@ Por último, en la carpeta test/sem/ se proporciona un ejemplo de un analizador 
 
 Se dispone de un archivo README explicando el contenido de las subcarpetas.
 
-Para realizar el análisis de todos los archivos que hay en la subcarpeta pruebas/, se puede ejecutar lo siguiente:
-`./script.sh -d test/sem/ -c PECL1.cup -j PECL1.lex -a pruebas/*`
-
 Si se quiere ver las reglas aplicadas al analizar, por ejemplo, el archivo '01.-Prueba_Lex.prog' se puede usar el _script_ de la siguiente manera
 `./script.sh -d test/sem/ -c PECL1.cup -j PECL1.lex -a pruebas/01.-Prueba_Lex.prog:-v`
 
